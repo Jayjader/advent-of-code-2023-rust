@@ -30,6 +30,15 @@ mod day1 {
             })
             .sum()
     }
+    #[test]
+    fn part1_on_sample_input() {
+        use crate::day1;
+        let input = "1abc2
+pqr3stu8vwx
+a1b2c3d4e5f
+treb7uchet";
+        assert_eq!(day1::part1(input), 12 + 38 + 15 + 77);
+    }
 
     fn find_first_digit_value_with_index(line: &str) -> Option<(usize, usize)> {
         line.find(|c| DIGITS.contains(&c)).map(|line_index| {
@@ -127,20 +136,6 @@ mod day1 {
                 format!("{}{}", first, last).parse::<usize>().unwrap()
             })
             .sum()
-    }
-}
-
-#[cfg(test)]
-mod test {
-
-    #[test]
-    fn on_sample_input() {
-        use crate::day1;
-        let input = "1abc2
-pqr3stu8vwx
-a1b2c3d4e5f
-treb7uchet";
-        assert_eq!(day1::part1(input), 12 + 38 + 15 + 77);
     }
     #[test]
     fn part2_on_sample_input() {

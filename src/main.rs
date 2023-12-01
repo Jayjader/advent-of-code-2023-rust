@@ -44,7 +44,7 @@ mod day1 {
         let line = "two1nine";
         assert_eq!(Some((3, 1)), find_first_digit_value_with_index(line))
     }
-    fn find_second_digit_value_with_index(line: &str) -> Option<(usize, usize)> {
+    fn find_last_digit_value_with_index(line: &str) -> Option<(usize, usize)> {
         line.rfind(|c| DIGITS.contains(&c)).map(|line_index| {
             (
                 line_index,
@@ -53,9 +53,9 @@ mod day1 {
         })
     }
     #[test]
-    fn test_find_second_digit_value_with_index() {
+    fn test_find_last_digit_value_with_index() {
         let line = "two1nine";
-        assert_eq!(Some((3, 1)), find_second_digit_value_with_index(line))
+        assert_eq!(Some((3, 1)), find_last_digit_value_with_index(line))
     }
     fn find_first_named_digit_value_with_index(line: &str) -> Option<(usize, usize)> {
         DIGIT_NAMES
@@ -72,7 +72,7 @@ mod day1 {
         let line = "two1nine";
         assert_eq!(Some((0, 2)), find_first_named_digit_value_with_index(line))
     }
-    fn find_second_named_digit_value_with_index(line: &str) -> Option<(usize, usize)> {
+    fn find_last_named_digit_value_with_index(line: &str) -> Option<(usize, usize)> {
         DIGIT_NAMES
             .iter()
             .enumerate()
@@ -83,9 +83,9 @@ mod day1 {
             .max_by(|(a_index, _a_val), (b_index, _b_val)| a_index.cmp(b_index))
     }
     #[test]
-    fn test_find_second_named_digit_with_index() {
+    fn test_find_last_named_digit_with_index() {
         let line = "two1nine";
-        assert_eq!(Some((4, 9)), find_second_named_digit_value_with_index(line))
+        assert_eq!(Some((4, 9)), find_last_named_digit_value_with_index(line))
     }
 
     pub fn part2(input: &str) -> usize {
@@ -109,9 +109,9 @@ mod day1 {
                     }
                 };
 
-                let second = match (
-                    find_second_digit_value_with_index(line),
-                    find_second_named_digit_value_with_index(line),
+                let last = match (
+                    find_last_digit_value_with_index(line),
+                    find_last_named_digit_value_with_index(line),
                 ) {
                     (None, None) => panic!(),
                     (Some((_, digit_value)), None) => digit_value,
@@ -124,7 +124,7 @@ mod day1 {
                         }
                     }
                 };
-                format!("{}{}", first, second).parse::<usize>().unwrap()
+                format!("{}{}", first, last).parse::<usize>().unwrap()
             })
             .sum()
     }

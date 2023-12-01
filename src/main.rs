@@ -5,7 +5,6 @@ fn main() {
 }
 
 mod day1 {
-    use std::ops::Index;
 
     const DIGITS: [char; 10] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
     const DIGIT_NAMES: [&str; 9] = [
@@ -16,28 +15,18 @@ mod day1 {
             .split('\n')
             .filter(|line| !line.is_empty())
             .map(|line| {
-                format!(
-                    "{}{}",
-                    line.chars()
-                        .nth(line.find(|c| DIGITS.contains(&c)).unwrap())
-                        .unwrap(),
-                    line.chars()
-                        .nth(line.rfind(|c| DIGITS.contains(&c)).unwrap())
-                        .unwrap(),
-                )
-                .parse::<usize>()
-                .unwrap()
+                find_first_digit_value_with_index(line).unwrap().1 * 10
+                    + find_last_digit_value_with_index(line).unwrap().1
             })
             .sum()
     }
     #[test]
     fn part1_on_sample_input() {
-        use crate::day1;
         let input = "1abc2
 pqr3stu8vwx
 a1b2c3d4e5f
 treb7uchet";
-        assert_eq!(day1::part1(input), 12 + 38 + 15 + 77);
+        assert_eq!(part1(input), 12 + 38 + 15 + 77);
     }
 
     fn find_first_digit_value_with_index(line: &str) -> Option<(usize, usize)> {
@@ -133,13 +122,12 @@ treb7uchet";
                         }
                     }
                 };
-                format!("{}{}", first, last).parse::<usize>().unwrap()
+                first * 10 + last
             })
             .sum()
     }
     #[test]
     fn part2_on_sample_input() {
-        use crate::day1;
         let input = "two1nine
 eightwothree
 abcone2threexyz
@@ -148,6 +136,6 @@ xtwone3four
 zoneight234
 7pqrstsixteen
 ";
-        assert_eq!(day1::part2(input), 29 + 83 + 13 + 24 + 42 + 14 + 76);
+        assert_eq!(part2(input), 29 + 83 + 13 + 24 + 42 + 14 + 76);
     }
 }

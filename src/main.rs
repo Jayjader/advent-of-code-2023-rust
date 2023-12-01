@@ -10,6 +10,7 @@ mod day1 {
     const DIGIT_NAMES: [&str; 9] = [
         "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
     ];
+
     pub fn part1(input: &str) -> usize {
         input
             .split('\n')
@@ -86,6 +87,136 @@ treb7uchet";
         assert_eq!(Some((4, 9)), find_last_named_digit_value_with_index(line))
     }
 
+    // single-pass parser?
+    enum One {
+        O,
+        On,
+    }
+    enum TwoOrThree {
+        T,
+        Tw,
+        Th,
+        Thr,
+        Thre,
+    }
+    enum FourOrFive {
+        F,
+        Fo,
+        Fou,
+        Fi,
+        Fiv,
+    }
+    enum SixOrSeven {
+        S,
+        Si,
+        Se,
+        Sev,
+        Seve,
+    }
+    enum Eight {
+        E,
+        Ei,
+        Eig,
+        Eigh,
+    }
+    enum Nine {
+        N,
+        Ni,
+        Nin,
+    }
+    enum Parsing {
+        Nothing,
+        One(One),
+        TwoOrThree(TwoOrThree),
+        FourOrFive(FourOrFive),
+        SixOrSeven(SixOrSeven),
+        Eight(Eight),
+        Nine(Nine),
+        Parsed(u8),
+    }
+
+    fn parse_char(c: &char) -> Parsing {
+        match c {
+            'o' => Parsing::One(One::O),
+            't' => Parsing::TwoOrThree(TwoOrThree::T),
+            'f' => Parsing::FourOrFive(FourOrFive::F),
+            's' => Parsing::SixOrSeven(SixOrSeven::S),
+            'e' => Parsing::Eight(Eight::E),
+            'n' => Parsing::Nine(Nine::N),
+            _ => Parsing::Nothing,
+        }
+    }
+    fn parse_first_digit(line: &str) -> u8 {
+        if let Parsing::Parsed(digit) = line.chars().fold(Parsing::Nothing, |accum, next| {
+            if let Parsing::Parsed(_) = accum {
+                accum
+            } else if next.is_numeric() {
+                Parsing::Parsed(next.to_digit(10).unwrap() as u8)
+            } else {
+                match accum {
+                    Parsing::Nothing => parse_char(&next),
+                    Parsing::One(one) => match (one, next) {
+                        (One::O, 'n') => Parsing::One(One::On),
+                        (One::On, 'e') => Parsing::Parsed(1),
+                        _ => parse_char(&next),
+                    },
+                    Parsing::TwoOrThree(twoOrThree) => match (twoOrThree, next) {
+                        (TwoOrThree::T, 'w') => Parsing::TwoOrThree(TwoOrThree::Tw),
+                        (TwoOrThree::Tw, 'o') => Parsing::Parsed(2),
+                        (TwoOrThree::T, 'h') => Parsing::TwoOrThree(TwoOrThree::Th),
+                        (TwoOrThree::Th, 'r') => Parsing::TwoOrThree(TwoOrThree::Thr),
+                        (TwoOrThree::Thr, 'e') => Parsing::TwoOrThree(TwoOrThree::Thre),
+                        (TwoOrThree::Thre, 'e') => Parsing::Parsed(3),
+                        _ => parse_char(&next),
+                    },
+                    Parsing::FourOrFive(fourOrFive) => match (fourOrFive, next) {
+                        (FourOrFive::F, 'o') => Parsing::FourOrFive(FourOrFive::Fo),
+                        (FourOrFive::Fo, 'u') => Parsing::FourOrFive(FourOrFive::Fou),
+                        (FourOrFive::Fou, 'r') => Parsing::Parsed(4),
+                        (FourOrFive::F, 'i') => Parsing::FourOrFive(FourOrFive::Fi),
+                        (FourOrFive::Fi, 'v') => Parsing::FourOrFive(FourOrFive::Fiv),
+                        (FourOrFive::Fiv, 'e') => Parsing::Parsed(5),
+                        _ => parse_char(&next),
+                    },
+                    Parsing::SixOrSeven(sixOrSeven) => match (sixOrSeven, next) {
+                        (SixOrSeven::S, 'i') => Parsing::SixOrSeven(SixOrSeven::Si),
+                        (SixOrSeven::Si, 'x') => Parsing::Parsed(6),
+                        (SixOrSeven::S, 'e') => Parsing::SixOrSeven(SixOrSeven::Se),
+                        (SixOrSeven::Se, 'v') => Parsing::SixOrSeven(SixOrSeven::Sev),
+                        (SixOrSeven::Sev, 'e') => Parsing::SixOrSeven(SixOrSeven::Seve),
+                        (SixOrSeven::Seve, 'n') => Parsing::Parsed(7),
+                        _ => parse_char(&next),
+                    },
+                    Parsing::Eight(eight) => match (eight, next) {
+                        (Eight::E, 'i') => Parsing::Eight(Eight::Ei),
+                        (Eight::Ei, 'g') => Parsing::Eight(Eight::Eig),
+                        (Eight::Eig, 'h') => Parsing::Eight(Eight::Eigh),
+                        (Eight::Eigh, 't') => Parsing::Parsed(8),
+                        _ => parse_char(&next),
+                    },
+                    Parsing::Nine(nine) => match (nine, next) {
+                        (Nine::N, 'i') => Parsing::Nine(Nine::Ni),
+                        (Nine::Ni, 'n') => Parsing::Nine(Nine::Nin),
+                        (Nine::Nin, 'e') => Parsing::Parsed(9),
+                        _ => parse_char(&next),
+                    },
+                    Parsing::Parsed(_) => {
+                        panic!("execution should not have reached this path")
+                    }
+                }
+            }
+        }) {
+            digit
+        } else {
+            panic!()
+        }
+    }
+    #[test]
+    fn test_parse_first_char() {
+        assert_eq!(parse_first_digit("two1nine"), 2);
+        assert_eq!(parse_first_digit("oone"), 1);
+        assert_eq!(parse_first_digit("ssgfcpxgmtwoeightzmtqlhqfive15"), 2);
+    }
     pub fn part2(input: &str) -> usize {
         input
             .split('\n')

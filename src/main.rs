@@ -1,7 +1,7 @@
 fn main() {
-    let day1_input = include_str!("../input/day1");
-    println!("day 1, part 1: {}", day1::part1(day1_input));
-    println!("day 1, part 2: {}", day1::part2(day1_input));
+    let day2_input = include_str!("../input/day2");
+    println!("day 2, part 1: {}", day2::part1(day2_input));
+    // println!("day 1, part 2: {}", day1::part2(day2_input));
 }
 
 mod day1 {
@@ -268,5 +268,74 @@ zoneight234
 7pqrstsixteen
 ";
         assert_eq!(part2(input), 29 + 83 + 13 + 24 + 42 + 14 + 76);
+    }
+}
+
+mod day2 {
+    pub fn part1(input: &str) -> usize {
+        #[derive(Debug)]
+        struct ColorCounts {
+            r: u8,
+            g: u8,
+            b: u8,
+        }
+        #[derive(Debug)]
+        struct Game {
+            id: u8,
+            queries: Vec<ColorCounts>,
+        }
+
+        let games: Vec<Game> = input
+            .trim_matches('\n')
+            .split('\n')
+            .map(|line| line.split_once(": ").unwrap())
+            .map(|(game_id, queries)| Game {
+                id: game_id.split_once(' ').unwrap().1.parse::<u8>().unwrap(),
+                queries: queries
+                    .split("; ")
+                    .map(|query| {
+                        query.split(", ").fold(
+                            ColorCounts { r: 0, b: 0, g: 0 },
+                            |mut accum, next| {
+                                let (count, color) = next.split_once(' ').unwrap();
+                                let count = count.parse::<u8>().unwrap();
+                                match color {
+                                    "red" => {
+                                        accum.r += count;
+                                    }
+                                    "blue" => {
+                                        accum.b += count;
+                                    }
+                                    "green" => {
+                                        accum.g += count;
+                                    }
+                                    _ => {}
+                                }
+                                accum
+                            },
+                        )
+                    })
+                    .collect(),
+            })
+            .collect();
+        let max_red = 12;
+        let max_green = 13;
+        let max_blue = 14;
+        let allowed_games = games.iter().filter(|game| {
+            game.queries
+                .iter()
+                .all(|q| q.r <= max_red && q.g <= max_green && q.b <= max_blue)
+        });
+        allowed_games.map(|game| game.id as usize).sum()
+    }
+    #[test]
+    fn test_part1_on_sample() {
+        let sample = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
+";
+        assert_eq!(part1(sample), 1 + 2 + 5);
     }
 }

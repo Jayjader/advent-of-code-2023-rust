@@ -1,7 +1,7 @@
 fn main() {
     let day3_input = include_str!("../input/day3");
     println!("day 3, part 1: {}", day3::part1(day3_input));
-    // println!("day 2, part 2: {}", day2::part2(day2_input));
+    println!("day 3, part 2: {}", day3::part2(day3_input));
 }
 
 mod day1 {
@@ -389,12 +389,10 @@ mod day3 {
         current_number: Option<Number>,
         found_numbers: Vec<Number>,
         found_symbols: Vec<Symbol>,
-        valid_part_numbers: Vec<Number>,
     }
-    pub fn part1(input: &str) -> usize {
-        let line_length = input.find('\n').unwrap();
-        let line_count = input.len() / line_length;
-        let mut parsed = input
+
+    fn parse_schematic(input: &str) -> Parsing {
+        input
             .split('\n')
             .filter(|line| !line.is_empty())
             .enumerate()
@@ -403,7 +401,6 @@ mod day3 {
                     current_number: None,
                     found_numbers: vec![],
                     found_symbols: vec![],
-                    valid_part_numbers: vec![],
                 },
                 |accum, (y, line)| {
                     let mut accum_with_line =
@@ -462,7 +459,14 @@ mod day3 {
                     }
                     accum_with_line
                 },
-            );
+            )
+    }
+
+    pub fn part1(input: &str) -> usize {
+        let line_length = input.find('\n').unwrap();
+        let line_count = input.len() / line_length;
+        let parsed = parse_schematic(input);
+        let mut valid_part_numbers = vec![];
         for number in parsed.found_numbers {
             if parsed.found_symbols.iter().any(|symbol| {
                 let min_num_x = number.start.x.saturating_sub(1);
@@ -474,14 +478,10 @@ mod day3 {
                     && (min_num_y <= symbol.pos.y)
                     && (symbol.pos.y <= max_num_y)
             }) {
-                parsed.valid_part_numbers.push(number);
+                valid_part_numbers.push(number);
             }
         }
-        parsed
-            .valid_part_numbers
-            .iter()
-            .map(|n| n.val as usize)
-            .sum()
+        valid_part_numbers.iter().map(|n| n.val as usize).sum()
     }
     #[test]
     fn part1_on_sample_input() {
@@ -497,5 +497,54 @@ mod day3 {
 .664.598..
 ";
         assert_eq!(part1(input), 4361)
+    }
+
+    pub fn part2(input: &str) -> usize {
+        let line_length = input.find('\n').unwrap();
+        let line_count = input.len() / line_length;
+        let parsed = parse_schematic(input);
+        let mut gears = vec![];
+        for symbol in parsed.found_symbols {
+            let valid_numbers = parsed
+                .found_numbers
+                .iter()
+                .filter_map(|number| {
+                    let min_num_x = number.start.x.saturating_sub(1);
+                    let min_num_y = number.start.y.saturating_sub(1);
+                    let max_num_x = (line_length as u8).min(number.end.x + 1);
+                    let max_num_y = (line_count as u8).min(number.end.y + 1);
+                    if (min_num_x <= symbol.pos.x)
+                        && (symbol.pos.x <= max_num_x)
+                        && (min_num_y <= symbol.pos.y)
+                        && (symbol.pos.y <= max_num_y)
+                    {
+                        Some(number.val as usize)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+            if valid_numbers.len() == 2 {
+                gears.push(valid_numbers.iter().product());
+            }
+        }
+        gears.iter().sum()
+    }
+
+    #[test]
+    fn part2_on_sample_input() {
+        let input = "467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598..
+
+";
+        assert_eq!(part2(input), 467835);
     }
 }

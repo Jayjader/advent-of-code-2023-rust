@@ -160,7 +160,7 @@ treb7uchet";
                         (One::On, 'e') => Parsing::Parsed(1),
                         _ => parse_char(&next),
                     },
-                    Parsing::TwoOrThree(twoOrThree) => match (twoOrThree, next) {
+                    Parsing::TwoOrThree(two_or_three) => match (two_or_three, next) {
                         (TwoOrThree::T, 'w') => Parsing::TwoOrThree(TwoOrThree::Tw),
                         (TwoOrThree::Tw, 'o') => Parsing::Parsed(2),
                         (TwoOrThree::T, 'h') => Parsing::TwoOrThree(TwoOrThree::Th),
@@ -169,7 +169,7 @@ treb7uchet";
                         (TwoOrThree::Thre, 'e') => Parsing::Parsed(3),
                         _ => parse_char(&next),
                     },
-                    Parsing::FourOrFive(fourOrFive) => match (fourOrFive, next) {
+                    Parsing::FourOrFive(four_or_five) => match (four_or_five, next) {
                         (FourOrFive::F, 'o') => Parsing::FourOrFive(FourOrFive::Fo),
                         (FourOrFive::Fo, 'u') => Parsing::FourOrFive(FourOrFive::Fou),
                         (FourOrFive::Fou, 'r') => Parsing::Parsed(4),
@@ -178,7 +178,7 @@ treb7uchet";
                         (FourOrFive::Fiv, 'e') => Parsing::Parsed(5),
                         _ => parse_char(&next),
                     },
-                    Parsing::SixOrSeven(sixOrSeven) => match (sixOrSeven, next) {
+                    Parsing::SixOrSeven(six_or_seven) => match (six_or_seven, next) {
                         (SixOrSeven::S, 'i') => Parsing::SixOrSeven(SixOrSeven::Si),
                         (SixOrSeven::Si, 'x') => Parsing::Parsed(6),
                         (SixOrSeven::S, 'e') => Parsing::SixOrSeven(SixOrSeven::Se),

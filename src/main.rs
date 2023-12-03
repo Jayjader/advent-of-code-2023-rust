@@ -422,45 +422,42 @@ mod day3 {
                 },
                 |accum, (y, line)| {
                     let mut accum_with_line =
-                        line.chars()
-                            .enumerate()
-                            .fold(accum, |mut accum, (x, c)| match c {
-                                '.' => {
-                                    if let Some(number) = accum.current_number {
-                                        accum.found_numbers.push(number);
-                                    }
-                                    Parsing {
-                                        current_number: None,
-                                        ..accum
-                                    }
+                        line.chars().enumerate().fold(accum, |mut accum, (x, c)| {
+                            if c == '.' {
+                                if let Some(number) = accum.current_number {
+                                    accum.found_numbers.push(number);
                                 }
-                                d if d.is_numeric() => {
-                                    let pos = Position::from_usize(x, y);
-                                    Parsing {
-                                        current_number: Some(Number {
-                                            val: d.to_digit(10).unwrap()
-                                                + accum.current_number.map_or(0, |n| n.val * 10),
-                                            start: accum.current_number.map_or(pos, |n| n.start),
-                                            end: pos,
-                                        }),
-                                        ..accum
-                                    }
+                                Parsing {
+                                    current_number: None,
+                                    ..accum
                                 }
-                                d if !d.is_alphanumeric() => {
-                                    accum.found_symbols.push(Symbol {
-                                        val: c,
-                                        pos: Position::from_usize(x, y),
-                                    });
-                                    if let Some(number) = accum.current_number {
-                                        accum.found_numbers.push(number);
-                                    }
-                                    Parsing {
-                                        current_number: None,
-                                        ..accum
-                                    }
+                            } else if c.is_numeric() {
+                                let pos = Position::from_usize(x, y);
+                                Parsing {
+                                    current_number: Some(Number {
+                                        val: c.to_digit(10).unwrap()
+                                            + accum.current_number.map_or(0, |n| n.val * 10),
+                                        start: accum.current_number.map_or(pos, |n| n.start),
+                                        end: pos,
+                                    }),
+                                    ..accum
                                 }
-                                _ => panic!(),
-                            });
+                            } else if !c.is_alphanumeric() {
+                                accum.found_symbols.push(Symbol {
+                                    val: c,
+                                    pos: Position::from_usize(x, y),
+                                });
+                                if let Some(number) = accum.current_number {
+                                    accum.found_numbers.push(number);
+                                }
+                                Parsing {
+                                    current_number: None,
+                                    ..accum
+                                }
+                            } else {
+                                panic!()
+                            }
+                        });
                     // terminate current part number at line end
                     if let Some(number) = accum_with_line.current_number {
                         accum_with_line.found_numbers.push(number);

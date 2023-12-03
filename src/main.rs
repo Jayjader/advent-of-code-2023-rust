@@ -422,36 +422,31 @@ mod day3 {
                 },
                 |accum, (y, line)| {
                     let mut accum_with_line =
-                        line.chars().enumerate().fold(accum, |mut accum, (x, c)| {
-                            match (c, accum.current_number) {
-                                ('.', None) => accum,
-                                ('.', Some(number)) => {
-                                    accum.found_numbers.push(number);
+                        line.chars()
+                            .enumerate()
+                            .fold(accum, |mut accum, (x, c)| match c {
+                                '.' => {
+                                    if let Some(number) = accum.current_number {
+                                        accum.found_numbers.push(number);
+                                    }
                                     Parsing {
                                         current_number: None,
                                         ..accum
                                     }
                                 }
-                                (d, None) if d.is_numeric() => {
+                                d if d.is_numeric() => {
                                     let pos = Position::from_usize(x, y);
                                     Parsing {
                                         current_number: Some(Number {
-                                            val: d.to_digit(10).unwrap(),
-                                            start: pos,
+                                            val: d.to_digit(10).unwrap()
+                                                + accum.current_number.map_or(0, |n| n.val * 10),
+                                            start: accum.current_number.map_or(pos, |n| n.start),
                                             end: pos,
                                         }),
                                         ..accum
                                     }
                                 }
-                                (d, Some(number)) if d.is_numeric() => Parsing {
-                                    current_number: Some(Number {
-                                        val: number.val * 10 + d.to_digit(10).unwrap(),
-                                        end: Position::from_usize(x, y),
-                                        ..number
-                                    }),
-                                    ..accum
-                                },
-                                (d, _) if !d.is_alphanumeric() => {
+                                d if !d.is_alphanumeric() => {
                                     accum.found_symbols.push(Symbol {
                                         val: c,
                                         pos: Position::from_usize(x, y),
@@ -465,8 +460,7 @@ mod day3 {
                                     }
                                 }
                                 _ => panic!(),
-                            }
-                        });
+                            });
                     // terminate current part number at line end
                     if let Some(number) = accum_with_line.current_number {
                         accum_with_line.found_numbers.push(number);

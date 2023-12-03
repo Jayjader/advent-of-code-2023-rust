@@ -451,19 +451,14 @@ mod day3 {
                                     }),
                                     ..accum
                                 },
-                                (d, None) if !d.is_alphanumeric() => {
+                                (d, _) if !d.is_alphanumeric() => {
                                     accum.found_symbols.push(Symbol {
                                         val: c,
                                         pos: Position::from_usize(x, y),
                                     });
-                                    accum
-                                }
-                                (d, Some(number)) if !d.is_alphanumeric() => {
-                                    accum.found_numbers.push(number);
-                                    accum.found_symbols.push(Symbol {
-                                        val: c,
-                                        pos: Position::from_usize(x, y),
-                                    });
+                                    if let Some(number) = accum.current_number {
+                                        accum.found_numbers.push(number);
+                                    }
                                     Parsing {
                                         current_number: None,
                                         ..accum

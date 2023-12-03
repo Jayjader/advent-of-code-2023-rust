@@ -518,6 +518,7 @@ mod day3 {
         parsed
             .found_symbols
             .iter()
+            .filter(|s| s.val == '*')
             .map(|symbol| {
                 parsed
                     .found_numbers

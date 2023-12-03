@@ -381,6 +381,23 @@ mod day3 {
         start: Position,
         end: Position,
     }
+    impl Number {
+        pub fn is_valid_part_number(
+            self: &Number,
+            line_length: usize,
+            line_count: usize,
+            symbol_pos: &Position,
+        ) -> bool {
+            let min_num_x = self.start.x.saturating_sub(1);
+            let min_num_y = self.start.y.saturating_sub(1);
+            let max_num_x = (line_length as u8).min(self.end.x + 1);
+            let max_num_y = (line_count as u8).min(self.end.y + 1);
+            (min_num_x <= symbol_pos.x)
+                && (symbol_pos.x <= max_num_x)
+                && (min_num_y <= symbol_pos.y)
+                && (symbol_pos.y <= max_num_y)
+        }
+    }
     struct Symbol {
         val: char,
         pos: Position,
@@ -470,16 +487,10 @@ mod day3 {
             .found_numbers
             .iter()
             .filter(|number| {
-                parsed.found_symbols.iter().any(|symbol| {
-                    let min_num_x = number.start.x.saturating_sub(1);
-                    let min_num_y = number.start.y.saturating_sub(1);
-                    let max_num_x = (line_length as u8).min(number.end.x + 1);
-                    let max_num_y = (line_count as u8).min(number.end.y + 1);
-                    (min_num_x <= symbol.pos.x)
-                        && (symbol.pos.x <= max_num_x)
-                        && (min_num_y <= symbol.pos.y)
-                        && (symbol.pos.y <= max_num_y)
-                })
+                parsed
+                    .found_symbols
+                    .iter()
+                    .any(|symbol| number.is_valid_part_number(line_length, line_count, &symbol.pos))
             })
             .map(|n| n.val as usize)
             .sum()
@@ -507,32 +518,18 @@ mod day3 {
         parsed
             .found_symbols
             .iter()
-            .filter_map(|symbol| {
-                let valid_numbers = parsed
+            .map(|symbol| {
+                parsed
                     .found_numbers
                     .iter()
-                    .filter_map(|number| {
-                        let min_num_x = number.start.x.saturating_sub(1);
-                        let min_num_y = number.start.y.saturating_sub(1);
-                        let max_num_x = (line_length as u8).min(number.end.x + 1);
-                        let max_num_y = (line_count as u8).min(number.end.y + 1);
-                        if (min_num_x <= symbol.pos.x)
-                            && (symbol.pos.x <= max_num_x)
-                            && (min_num_y <= symbol.pos.y)
-                            && (symbol.pos.y <= max_num_y)
-                        {
-                            Some(number.val as usize)
-                        } else {
-                            None
-                        }
+                    .filter(|number| {
+                        number.is_valid_part_number(line_length, line_count, &symbol.pos)
                     })
-                    .collect::<Vec<_>>();
-                if valid_numbers.len() == 2 {
-                    Some(valid_numbers.iter().product::<usize>())
-                } else {
-                    None
-                }
+                    .map(|number| (number.val as usize))
+                    .collect::<Vec<_>>()
             })
+            .filter(|valid_numbers| valid_numbers.len() == 2)
+            .map(|part_numbers| part_numbers.iter().product::<usize>())
             .sum()
     }
 

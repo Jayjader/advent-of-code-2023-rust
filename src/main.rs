@@ -376,6 +376,7 @@ mod day3 {
             }
         }
     }
+    #[derive(Clone, Copy)]
     struct Number {
         val: u32,
         start: Position,
@@ -422,54 +423,46 @@ mod day3 {
                 |accum, (y, line)| {
                     let mut accum_with_line =
                         line.chars().enumerate().fold(accum, |mut accum, (x, c)| {
-                            match accum.current_number {
-                                None => match c {
-                                    '.' => accum,
-                                    d if d.is_numeric() => {
-                                        let pos = Position::from_usize(x, y);
-                                        accum.current_number = Some(Number {
-                                            val: d.to_digit(10).unwrap(),
-                                            start: pos,
-                                            end: pos,
-                                        });
-                                        accum
-                                    }
-                                    d if !d.is_alphanumeric() => {
-                                        accum.found_symbols.push(Symbol {
-                                            val: c,
-                                            pos: Position::from_usize(x, y),
-                                        });
-                                        accum
-                                    }
-                                    _ => panic!(),
-                                },
-                                Some(number) => match c {
-                                    '.' => {
-                                        accum.found_numbers.push(number);
-                                        accum.current_number = None;
-                                        accum
-                                    }
-                                    d if d.is_numeric() => {
-                                        accum.current_number = Some(Number {
-                                            val: number.val * 10 + d.to_digit(10).unwrap(),
-                                            end: Position::from_usize(x, y),
-                                            ..number
-                                        });
-                                        accum
-                                    }
-                                    d if !d.is_alphanumeric() => {
-                                        accum.found_numbers.push(number);
-                                        accum.current_number = None;
-                                        accum.found_symbols.push(Symbol {
-                                            val: c,
-                                            pos: Position::from_usize(x, y),
-                                        });
-                                        accum
-                                    }
-                                    _ => panic!(),
-                                },
+                            match (c, accum.current_number) {
+                                ('.', None) => {}
+                                ('.', Some(number)) => {
+                                    accum.found_numbers.push(number);
+                                    accum.current_number = None;
+                                }
+                                (d, None) if d.is_numeric() => {
+                                    let pos = Position::from_usize(x, y);
+                                    accum.current_number = Some(Number {
+                                        val: d.to_digit(10).unwrap(),
+                                        start: pos,
+                                        end: pos,
+                                    });
+                                }
+                                (d, Some(number)) if d.is_numeric() => {
+                                    accum.current_number = Some(Number {
+                                        val: number.val * 10 + d.to_digit(10).unwrap(),
+                                        end: Position::from_usize(x, y),
+                                        ..number
+                                    });
+                                }
+                                (d, None) if !d.is_alphanumeric() => {
+                                    accum.found_symbols.push(Symbol {
+                                        val: c,
+                                        pos: Position::from_usize(x, y),
+                                    });
+                                }
+                                (d, Some(number)) if !d.is_alphanumeric() => {
+                                    accum.found_numbers.push(number);
+                                    accum.current_number = None;
+                                    accum.found_symbols.push(Symbol {
+                                        val: c,
+                                        pos: Position::from_usize(x, y),
+                                    });
+                                }
+                                _ => panic!(),
                             }
+                            accum
                         });
+                    // terminate current part number at line end
                     if let Some(number) = accum_with_line.current_number {
                         accum_with_line.found_numbers.push(number);
                         accum_with_line.current_number = None;

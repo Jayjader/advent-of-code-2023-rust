@@ -542,6 +542,8 @@ mod day3 {
 }
 
 mod day4 {
+    use std::collections::HashMap;
+
     pub fn part1(input: &str) -> usize {
         input
             .split('\n')
@@ -585,6 +587,63 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
         assert_eq!(part1(input), 13)
     }
     pub fn part2(input: &str) -> usize {
-        0
+        #[derive(Default)]
+        struct Card {
+            winning: Vec<u8>,
+            drawn: Vec<u8>,
+        }
+        input
+            .split('\n')
+            .filter(|line| !line.is_empty())
+            .enumerate()
+            .fold(HashMap::new(), |mut accum, (card_index, line)| {
+                let card_num = card_index + 1;
+                if (accum.get(&card_num).is_none()) {
+                    accum.insert(card_num, 0);
+                }
+                let new_count = accum.get(&card_num).unwrap() + 1;
+                accum.insert(card_num, new_count);
+                let (_, rest) = line.split_once(':').unwrap();
+                let (winning, drawn) = rest.split_once('|').unwrap();
+                let winning: Vec<_> = winning
+                    .trim()
+                    .split(' ')
+                    .filter(|chars| !chars.is_empty())
+                    .map(|n| n.parse::<u8>().unwrap())
+                    .collect();
+                let drawn: Vec<_> = drawn
+                    .trim()
+                    .split(' ')
+                    .filter(|chars| !chars.is_empty())
+                    .map(|n| n.parse::<u8>().unwrap())
+                    .collect();
+                let matches = drawn
+                    .iter()
+                    .filter(|number| winning.contains(number))
+                    .count();
+                if matches > 0 {
+                    for offset in 1..=matches {
+                        let copy_num = card_num + offset;
+                        accum.insert(
+                            copy_num,
+                            accum.get(&copy_num).unwrap_or(&0usize) + new_count,
+                        );
+                    }
+                }
+                accum
+            })
+            .values()
+            .sum()
+    }
+    #[test]
+    fn part2_on_sample() {
+        let input = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
+Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
+Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
+Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83
+Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
+Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
+";
+        assert_eq!(part2(input), 30);
     }
 }

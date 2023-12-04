@@ -551,16 +551,21 @@ mod day4 {
             .filter(|chars| !chars.is_empty())
             .map(|n| n.parse::<u8>().unwrap())
     }
+    fn parse_line(line: &str) -> (impl Iterator<Item = u8> + '_, impl Iterator<Item = u8> + '_) {
+        let (_, rest) = line.split_once(':').unwrap();
+        let (winning, drawn) = rest.split_once('|').unwrap();
+        let winning = parse_numbers(winning);
+        let drawn = parse_numbers(drawn);
+        (winning, drawn)
+    }
 
     pub fn part1(input: &str) -> usize {
         input
             .split('\n')
             .filter(|line| !line.is_empty())
             .map(|line| {
-                let (_, rest) = line.split_once(':').unwrap();
-                let (winning, drawn) = rest.split_once('|').unwrap();
-                let winning = parse_numbers(winning).collect::<BinaryHeap<u8>>();
-                let drawn = parse_numbers(drawn);
+                let (winning, drawn) = parse_line(line);
+                let winning = winning.collect::<BinaryHeap<u8>>();
                 let scoring = drawn
                     .filter(|number| winning.iter().any(|w| w == number))
                     .count();
@@ -584,34 +589,25 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
         assert_eq!(part1(input), 13)
     }
     pub fn part2(input: &str) -> usize {
+        let line_count = input.trim().split('\n').count();
         input
             .split('\n')
             .filter(|line| !line.is_empty())
             .enumerate()
-            .fold(HashMap::new(), |mut accum, (card_index, line)| {
-                let card_num = card_index + 1;
-                if accum.get(&card_num).is_none() {
-                    accum.insert(card_num, 0);
-                }
-                let new_count = accum.get(&card_num).unwrap() + 1;
-                accum.insert(card_num, new_count);
-                let (_, rest) = line.split_once(':').unwrap();
-                let (winning, drawn) = rest.split_once('|').unwrap();
-                let winning = parse_numbers(winning).collect::<BinaryHeap<u8>>();
-                let drawn = parse_numbers(drawn);
-                let matches = drawn
-                    .filter(|number| winning.iter().any(|w| w == number))
-                    .count();
-                for offset in 1..=matches {
-                    let copy_num = card_num + offset;
-                    accum.insert(
-                        copy_num,
-                        accum.get(&copy_num).unwrap_or(&0usize) + new_count,
-                    );
-                }
-                accum
-            })
-            .values()
+            .fold(
+                std::iter::repeat(1).take(line_count).collect::<Vec<_>>(),
+                |mut accum, (card_index, line)| {
+                    let card_count = accum[card_index];
+                    let (winning, drawn) = parse_line(line);
+                    let winning = winning.collect::<BinaryHeap<u8>>();
+                    let matches = drawn.filter(|d| winning.iter().any(|w| w == d)).count();
+                    for offset in 1..=matches {
+                        accum[card_index + offset] += card_count;
+                    }
+                    accum
+                },
+            )
+            .iter()
             .sum()
     }
 

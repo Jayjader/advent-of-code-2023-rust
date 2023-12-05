@@ -1,7 +1,7 @@
 fn main() {
-    let day4_input = include_str!("../input/day4");
-    println!("day 4, part 1: {}", day4::part1(day4_input));
-    println!("day 4, part 2: {}", day4::part2(day4_input));
+    let day5_input = include_str!("../input/day5");
+    println!("day 5, part 1: {}", day5::part1(day5_input));
+    println!("day 5, part 2: {}", day5::part2(day5_input));
 }
 
 mod day1 {
@@ -621,5 +621,130 @@ Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
 Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
 ";
         assert_eq!(part2(input), 30);
+    }
+}
+
+mod day5 {
+    use std::collections::HashMap;
+
+    #[derive(Debug)]
+    struct Mapping {
+        destination_start: usize,
+        source_start: usize,
+        count: usize,
+    }
+    #[derive(Debug, Default)]
+    struct Almanac<'a> {
+        seeds: Vec<usize>,
+        mappings: HashMap<(&'a str, &'a str), Vec<Mapping>>,
+    }
+    impl Almanac<'_> {
+        pub fn map_value(&self, category: &str, value: usize) -> (&str, usize) {
+            let ((_, new_dest), entries) = self
+                .mappings
+                .iter()
+                .find(|((s, _), _)| *s == category)
+                .unwrap();
+            (
+                new_dest,
+                entries
+                    .iter()
+                    .find(|m| m.source_start <= value && value <= m.source_start + m.count)
+                    .map_or(value, |m| m.destination_start + (value - m.source_start)),
+            )
+        }
+    }
+    fn parse_almanac(input: &str) -> Almanac {
+        input.split("\n\n").fold(
+            Almanac {
+                seeds: Vec::new(),
+                mappings: HashMap::new(),
+            },
+            |mut almanac, next| {
+                let (header, rest) = next.split_once(':').unwrap();
+                if almanac.seeds.is_empty() {
+                    almanac
+                        .seeds
+                        .extend(rest.trim().split(' ').map(|s| s.parse::<usize>().unwrap()));
+                    almanac
+                } else {
+                    let (dest_cat, header_rest) = header.split_once('-').unwrap();
+                    // "-to-" is indices 0->2
+                    let (_, source_cat) = header_rest.split_at(3);
+                    let (source_cat, _) = source_cat.split_once(' ').unwrap();
+                    almanac.mappings.entry((dest_cat, source_cat)).or_default();
+                    let for_cat_pair = almanac.mappings.get_mut(&(dest_cat, source_cat)).unwrap();
+                    for line in rest.trim().split('\n') {
+                        let mut split = line.split_whitespace();
+                        let destination_start: usize = split.next().unwrap().parse().unwrap();
+                        let source_start: usize = split.next().unwrap().parse().unwrap();
+                        let count: usize = split.next().unwrap().parse().unwrap();
+                        for_cat_pair.push(Mapping {
+                            destination_start,
+                            source_start,
+                            count,
+                        });
+                    }
+                    almanac
+                }
+            },
+        )
+    }
+    pub fn part1(input: &str) -> usize {
+        let almanac = parse_almanac(input);
+        almanac
+            .seeds
+            .iter()
+            .map(|seed_number| {
+                let mut mapped_value = *seed_number;
+                let mut source = "seed";
+                while source != "location" {
+                    (source, mapped_value) = dbg!(almanac.map_value(source, mapped_value));
+                }
+                mapped_value
+            })
+            .min()
+            .unwrap()
+    }
+    #[test]
+    fn part1_on_sample() {
+        let input = "seeds: 79 14 55 13
+
+seed-to-soil map:
+50 98 2
+52 50 48
+
+soil-to-fertilizer map:
+0 15 37
+37 52 2
+39 0 15
+
+fertilizer-to-water map:
+49 53 8
+0 11 42
+42 0 7
+57 7 4
+
+water-to-light map:
+88 18 7
+18 25 70
+
+light-to-temperature map:
+45 77 23
+81 45 19
+68 64 13
+
+temperature-to-humidity map:
+0 69 1
+1 0 69
+
+humidity-to-location map:
+60 56 37
+56 93 4
+";
+        assert_eq!(part1(input), 35);
+    }
+    pub fn part2(input: &str) -> usize {
+        0
     }
 }

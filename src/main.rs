@@ -626,7 +626,7 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
 
 mod day5 {
     use std::collections::HashMap;
-    use std::ops::Range;
+    use std::ops::RangeInclusive;
 
     #[derive(Debug)]
     struct Mapping {
@@ -636,13 +636,13 @@ mod day5 {
     }
     impl Mapping {
         fn source_end_inside(&self) -> usize {
-            self.source_start + self.count
+            self.source_start + self.count - 1
         }
         fn source_end_outside(&self) -> usize {
             self.source_end_inside() + 1
         }
         fn destination_end_inside(&self) -> usize {
-            self.destination_start + self.count
+            self.destination_start + self.count - 1
         }
         fn destination_end_outside(&self) -> usize {
             self.destination_end_inside() + 1
@@ -650,55 +650,56 @@ mod day5 {
     }
     #[derive(PartialEq, Eq, Debug)]
     enum Value {
-        Unmapped(Range<usize>),
-        Mapped(Range<usize>),
+        Unmapped(RangeInclusive<usize>),
+        Mapped(RangeInclusive<usize>),
     }
     impl Mapping {
-        pub fn map_range(&self, range: Range<usize>) -> Vec<Value> {
-            if range.end < self.source_start || range.start > self.source_end_inside() {
+        pub fn map_range(&self, range: RangeInclusive<usize>) -> Vec<Value> {
+            if *range.end() < self.source_start || *range.start() > self.source_end_inside() {
                 // range completely outside mapping
                 vec![Value::Unmapped(range)]
-            } else if range.start >= self.source_start {
-                if range.end <= self.source_end_inside() {
+            } else if *range.start() >= self.source_start {
+                if *range.end() <= self.source_end_inside() {
                     // range completely inside mapping
                     let offset_from_source_start =
-                        range.start as isize - self.source_start as isize;
+                        *range.start() as isize - self.source_start as isize;
                     let offset_from_source_end =
-                        range.end as isize - self.source_end_inside() as isize;
+                        *range.end() as isize - self.source_end_inside() as isize;
                     vec![Value::Mapped(
                         ((self.destination_start as isize + offset_from_source_start) as usize)
-                            ..((self.destination_end_outside() as isize + offset_from_source_end)
+                            ..=((self.destination_end_inside() as isize + offset_from_source_end)
                                 as usize),
                     )]
                 } else {
                     // range starts inside but ends outside mapping
                     let offset_from_source_start =
-                        range.start as isize - self.source_start as isize;
+                        *range.start() as isize - self.source_start as isize;
                     vec![
                         Value::Mapped(
                             ((self.destination_start as isize + offset_from_source_start) as usize)
-                                ..self.destination_end_outside(),
+                                ..=self.destination_end_inside(),
                         ),
-                        Value::Unmapped((self.source_end_outside())..range.end),
+                        Value::Unmapped(self.source_end_outside()..=*range.end()),
                     ]
                 }
-            } else if range.end <= self.source_end_outside() {
+            } else if *range.end() <= self.source_end_outside() {
                 // range starts outside but ends inside
-                let offset_from_source_end = range.end as isize - self.source_end_inside() as isize;
+                let offset_from_source_end =
+                    *range.end() as isize - self.source_end_inside() as isize;
                 vec![
-                    Value::Unmapped(range.start..(self.source_start)),
+                    Value::Unmapped(*range.start()..=(self.source_start)),
                     Value::Mapped(
                         self.destination_start
-                            ..(self.destination_end_outside() as isize + offset_from_source_end)
+                            ..=(self.destination_end_inside() as isize + offset_from_source_end)
                                 as usize,
                     ),
                 ]
             } else {
                 // range starts and ends outside (and completely overlaps mapping)
                 vec![
-                    Value::Unmapped(range.start..(self.source_start)),
-                    Value::Mapped(self.destination_start..self.destination_end_outside()),
-                    Value::Unmapped((self.source_end_inside())..range.end),
+                    Value::Unmapped(*range.start()..=(self.source_start)),
+                    Value::Mapped(self.destination_start..=self.destination_end_inside()),
+                    Value::Unmapped(self.source_end_outside()..=*range.end()),
                 ]
             }
         }
@@ -711,12 +712,12 @@ mod day5 {
             count: 2,
         };
         assert_eq!(
-            mapping.map_range(55..(55 + 13)),
-            vec![Value::Unmapped(55..68)]
+            mapping.map_range(55..=(55 + 13)),
+            vec![Value::Unmapped(55..=68)]
         );
         assert_eq!(
-            mapping.map_range(79..(79 + 14)),
-            vec![Value::Unmapped(79..93)]
+            mapping.map_range(79..=(79 + 14)),
+            vec![Value::Unmapped(79..=93)]
         );
 
         let mapping = Mapping {
@@ -725,14 +726,14 @@ mod day5 {
             count: 48,
         };
         assert_eq!(
-            mapping.map_range(55..(55 + 13)),
-            vec![Value::Mapped(53..66)]
+            mapping.map_range(55..=(55 + 13)),
+            vec![Value::Mapped(53..=66)]
         );
         // 52 + 48 = 100
         // 79 + 14 = 93
         assert_eq!(
-            mapping.map_range(79..(79 + 14)),
-            vec![Value::Mapped(77..91)]
+            mapping.map_range(79..=(79 + 14)),
+            vec![Value::Mapped(77..=91)]
         );
 
         let mapping = Mapping {
@@ -740,15 +741,15 @@ mod day5 {
             destination_start: 15,
             count: 37,
         };
-        assert_eq!(mapping.map_range(53..66), vec![Value::Unmapped(53..66)]);
-        assert_eq!(mapping.map_range(79..93), vec![Value::Unmapped(79..93)]);
+        assert_eq!(mapping.map_range(53..=66), vec![Value::Unmapped(53..=66)]);
+        assert_eq!(mapping.map_range(79..=93), vec![Value::Unmapped(79..=93)]);
         let mapping = Mapping {
             source_start: 37,
             destination_start: 52,
             count: 2,
         };
-        assert_eq!(mapping.map_range(53..66), vec![Value::Unmapped(53..66)]);
-        assert_eq!(mapping.map_range(79..93), vec![Value::Unmapped(79..93)]);
+        assert_eq!(mapping.map_range(53..=66), vec![Value::Unmapped(53..=66)]);
+        assert_eq!(mapping.map_range(79..=93), vec![Value::Unmapped(79..=93)]);
         let mapping = Mapping {
             source_start: 39,
             destination_start: 0,
@@ -756,8 +757,8 @@ mod day5 {
         };
         // 53-39=14
         assert_eq!(
-            mapping.map_range(53..66),
-            vec![Value::Mapped(13..15), Value::Unmapped(55..66)]
+            mapping.map_range(53..=66),
+            vec![Value::Mapped(14..=14), Value::Unmapped(54..=66)]
         );
     }
 
@@ -874,8 +875,8 @@ humidity-to-location map:
         assert_eq!(part1(input), 35);
     }
     pub fn part2(input: &str) -> usize {
-        fn merge_ranges(mut ranges: Vec<Range<usize>>) -> Vec<Range<usize>> {
-            ranges.sort_by(|a, b| a.start.cmp(&b.start));
+        fn merge_ranges(mut ranges: Vec<RangeInclusive<usize>>) -> Vec<RangeInclusive<usize>> {
+            ranges.sort_by(|a, b| a.start().cmp(b.start()));
             let (mut merged, final_considered) =
                 ranges
                     .iter()
@@ -884,11 +885,11 @@ humidity-to-location map:
                         |(mut merged, considering), next| match considering {
                             None => (merged, Some(next.clone())),
                             Some(range) => {
-                                if next.start > range.end {
+                                if next.start() > range.end() {
                                     merged.push(range);
                                     (merged, Some(next.clone()))
                                 } else {
-                                    (merged, Some(range.start..range.end.max(next.end)))
+                                    (merged, Some(*range.start()..=*range.end().max(next.end())))
                                 }
                             }
                         },
@@ -896,15 +897,15 @@ humidity-to-location map:
             if let Some(considered) = final_considered {
                 merged.push(considered);
             }
-            dbg!(merged)
+            merged
         }
         #[derive(Debug, Default)]
         struct Almanac {
-            seeds: Vec<Range<usize>>,
+            seeds: Vec<RangeInclusive<usize>>,
             mappings: Vec<Vec<Mapping>>,
         }
         impl Almanac {
-            pub fn map_ranges(&self) -> Vec<Range<usize>> {
+            pub fn map_ranges(&self) -> Vec<RangeInclusive<usize>> {
                 let mut mapped = Vec::from_iter(
                     self.seeds
                         .iter()
@@ -956,7 +957,7 @@ humidity-to-location map:
                             seed_defs
                                 .as_slice()
                                 .chunks(2)
-                                .map(|chunk| chunk[0]..(chunk[0] + chunk[1])),
+                                .map(|chunk| chunk[0]..=(chunk[0] + chunk[1])),
                         );
                         almanac
                     } else {
@@ -981,7 +982,7 @@ humidity-to-location map:
         almanac
             .map_ranges()
             .iter()
-            .map(|range| range.start)
+            .map(|range| *range.start())
             .min()
             .unwrap()
     }

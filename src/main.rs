@@ -1089,25 +1089,23 @@ mod day6 {
         races
             .iter()
             .map(|race| {
-                let t_min = (0.5
+                let t_min = 0.5
                     * (race.time as f32
-                        - ((race.time.pow(2) - 4 * race.distance_record) as f32).sqrt()));
+                        - ((race.time.pow(2) - 4 * race.distance_record) as f32).sqrt());
                 let t_min = if t_min.ceil() == t_min {
                     t_min as usize + 1
                 } else {
                     t_min.ceil() as usize
                 };
-                dbg!((t_min, t_min * (race.time - t_min)));
-                let t_max = (0.5
+                let t_max = 0.5
                     * (race.time as f32
-                        + ((race.time.pow(2) - 4 * race.distance_record) as f32).sqrt()));
+                        + ((race.time.pow(2) - 4 * race.distance_record) as f32).sqrt());
                 let t_max = if t_max.floor() == t_max {
                     t_max as usize - 1
                 } else {
                     t_max.floor() as usize
                 };
-                dbg!((t_max, t_max * (race.time - t_max)));
-                dbg!(t_max - t_min + 1)
+                t_max - t_min + 1
             })
             .product()
     }

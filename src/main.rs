@@ -829,7 +829,7 @@ mod day5 {
                 let mut mapped_value = *seed_number;
                 let mut source = "seed";
                 while source != "location" {
-                    (source, mapped_value) = dbg!(almanac.map_value(source, mapped_value));
+                    (source, mapped_value) = almanac.map_value(source, mapped_value);
                 }
                 mapped_value
             })
@@ -919,7 +919,6 @@ humidity-to-location map:
                             }
                         }
                     }
-                    dbg!(&mapped);
                     mapped = merge_ranges(
                         mapped
                             .into_iter()

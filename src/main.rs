@@ -1,7 +1,7 @@
 fn main() {
-    let day5_input = include_str!("../input/day5");
-    println!("day 5, part 1: {}", day5::part1(day5_input));
-    println!("day 5, part 2: {}", day5::part2(day5_input));
+    let day6_input = include_str!("../input/day6");
+    println!("day 6, part 1: {}", day6::part1(day6_input));
+    println!("day 6, part 2: {}", day6::part2(day6_input));
 }
 
 mod day1 {
@@ -1061,5 +1061,64 @@ humidity-to-location map:
 56 93 4
 ";
         assert_eq!(part2(input), 46);
+    }
+}
+
+mod day6 {
+    struct Race {
+        time: usize,
+        distance_record: usize,
+    }
+    fn parse_races(input: &str) -> Vec<Race> {
+        let (times, distances) = input.trim().split_once('\n').unwrap();
+        let times = times.split_whitespace().skip(1).map(|s| s.parse().unwrap());
+        let distance_records = distances
+            .split_whitespace()
+            .skip(1)
+            .map(|s| s.parse().unwrap());
+        times
+            .zip(distance_records)
+            .map(|(time, distance_record)| Race {
+                time,
+                distance_record,
+            })
+            .collect()
+    }
+    pub fn part1(input: &str) -> usize {
+        let races = parse_races(input);
+        races
+            .iter()
+            .map(|race| {
+                let t_min = (0.5
+                    * (race.time as f32
+                        - ((race.time.pow(2) - 4 * race.distance_record) as f32).sqrt()));
+                let t_min = if t_min.ceil() == t_min {
+                    t_min as usize + 1
+                } else {
+                    t_min.ceil() as usize
+                };
+                dbg!((t_min, t_min * (race.time - t_min)));
+                let t_max = (0.5
+                    * (race.time as f32
+                        + ((race.time.pow(2) - 4 * race.distance_record) as f32).sqrt()));
+                let t_max = if t_max.floor() == t_max {
+                    t_max as usize - 1
+                } else {
+                    t_max.floor() as usize
+                };
+                dbg!((t_max, t_max * (race.time - t_max)));
+                dbg!(t_max - t_min + 1)
+            })
+            .product()
+    }
+    #[test]
+    fn part1_on_sample() {
+        let input = "Time:      7  15   30
+Distance:  9  40  200
+";
+        assert_eq!(part1(input), 288);
+    }
+    pub fn part2(input: &str) -> usize {
+        0
     }
 }

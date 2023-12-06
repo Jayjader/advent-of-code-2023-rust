@@ -1070,13 +1070,18 @@ mod day6 {
         time: usize,
         distance_record: u64,
     }
+    fn parse_numbers<T: std::str::FromStr>(line: &str) -> impl Iterator<Item = T> + '_
+    where
+        <T as std::str::FromStr>::Err: std::fmt::Debug,
+    {
+        line.split_whitespace()
+            .skip(1)
+            .map(|s| s.parse::<T>().unwrap())
+    }
     fn parse_races(input: &str) -> Vec<Race> {
         let (times, distances) = input.trim().split_once('\n').unwrap();
-        let times = times.split_whitespace().skip(1).map(|s| s.parse().unwrap());
-        let distance_records = distances
-            .split_whitespace()
-            .skip(1)
-            .map(|s| s.parse().unwrap());
+        let times = parse_numbers(times);
+        let distance_records = parse_numbers(distances);
         times
             .zip(distance_records)
             .map(|(time, distance_record)| Race {
@@ -1119,27 +1124,29 @@ Distance:  9  40  200
     }
     fn parse_race(input: &str) -> Race {
         let (times, distances) = input.trim().split_once('\n').unwrap();
-        let time = times
-            .split_whitespace()
-            .skip(1)
-            .flat_map(|s| s.chars())
-            .collect::<String>()
-            .parse::<usize>()
-            .unwrap();
-        let distance_record = distances
-            .split_whitespace()
-            .skip(1)
-            .flat_map(|s| s.chars())
-            .collect::<String>()
-            .parse::<u64>()
-            .unwrap();
+        let time = parse_number(times);
+        let distance_record = parse_number(distances);
         Race {
             time,
             distance_record,
         }
     }
+
+    fn parse_number<T: std::str::FromStr>(times: &str) -> T
+    where
+        <T as std::str::FromStr>::Err: std::fmt::Debug,
+    {
+        times
+            .split_whitespace()
+            .skip(1)
+            .flat_map(|s| s.chars())
+            .collect::<String>()
+            .parse::<T>()
+            .unwrap()
+    }
+
     pub fn part2(input: &str) -> u64 {
-        let race = dbg!(parse_race(input));
+        let race = parse_race(input);
         let t_min = 0.5
             * (race.time as f64
                 - ((race.time.pow(2) as u64 - 4 * race.distance_record) as f64).sqrt());

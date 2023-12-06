@@ -1065,9 +1065,10 @@ humidity-to-location map:
 }
 
 mod day6 {
+    #[derive(Debug)]
     struct Race {
         time: usize,
-        distance_record: usize,
+        distance_record: u64,
     }
     fn parse_races(input: &str) -> Vec<Race> {
         let (times, distances) = input.trim().split_once('\n').unwrap();
@@ -1091,7 +1092,7 @@ mod day6 {
             .map(|race| {
                 let t_min = 0.5
                     * (race.time as f32
-                        - ((race.time.pow(2) - 4 * race.distance_record) as f32).sqrt());
+                        - ((race.time.pow(2) - 4 * race.distance_record as usize) as f32).sqrt());
                 let t_min = if t_min.ceil() == t_min {
                     t_min as usize + 1
                 } else {
@@ -1099,7 +1100,7 @@ mod day6 {
                 };
                 let t_max = 0.5
                     * (race.time as f32
-                        + ((race.time.pow(2) - 4 * race.distance_record) as f32).sqrt());
+                        + ((race.time.pow(2) - 4 * race.distance_record as usize) as f32).sqrt());
                 let t_max = if t_max.floor() == t_max {
                     t_max as usize - 1
                 } else {
@@ -1116,7 +1117,52 @@ Distance:  9  40  200
 ";
         assert_eq!(part1(input), 288);
     }
-    pub fn part2(input: &str) -> usize {
-        0
+    fn parse_race(input: &str) -> Race {
+        let (times, distances) = input.trim().split_once('\n').unwrap();
+        let time = times
+            .split_whitespace()
+            .skip(1)
+            .flat_map(|s| s.chars())
+            .collect::<String>()
+            .parse::<usize>()
+            .unwrap();
+        let distance_record = distances
+            .split_whitespace()
+            .skip(1)
+            .flat_map(|s| s.chars())
+            .collect::<String>()
+            .parse::<u64>()
+            .unwrap();
+        Race {
+            time,
+            distance_record,
+        }
+    }
+    pub fn part2(input: &str) -> u64 {
+        let race = dbg!(parse_race(input));
+        let t_min = 0.5
+            * (race.time as f64
+                - ((race.time.pow(2) as u64 - 4 * race.distance_record) as f64).sqrt());
+        let t_min = if t_min.ceil() == t_min {
+            t_min as u64 + 1
+        } else {
+            t_min.ceil() as u64
+        };
+        let t_max = 0.5
+            * (race.time as f64
+                + ((race.time.pow(2) as u64 - 4 * race.distance_record) as f64).sqrt());
+        let t_max = if t_max.floor() == t_max {
+            t_max as u64 - 1
+        } else {
+            t_max.floor() as u64
+        };
+        t_max - t_min + 1
+    }
+    #[test]
+    fn part2_on_sample() {
+        let input = "Time:      7  15   30
+Distance:  9  40  200
+";
+        assert_eq!(part2(input), 71503);
     }
 }

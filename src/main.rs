@@ -918,20 +918,20 @@ humidity-to-location map:
                                 mapped.splice(i..(i + 1), mapping.map_range(range.clone()));
                             }
                         }
-                        dbg!(&mapped);
-                        mapped = merge_ranges(
-                            mapped
-                                .into_iter()
-                                .map(|v| match v {
-                                    Value::Unmapped(range) => range,
-                                    Value::Mapped(range) => range,
-                                })
-                                .collect(),
-                        )
-                        .into_iter()
-                        .map(Value::Unmapped)
-                        .collect();
                     }
+                    dbg!(&mapped);
+                    mapped = merge_ranges(
+                        mapped
+                            .into_iter()
+                            .map(|v| match v {
+                                Value::Unmapped(range) => range,
+                                Value::Mapped(range) => range,
+                            })
+                            .collect(),
+                    )
+                    .into_iter()
+                    .map(Value::Unmapped)
+                    .collect();
                 }
                 mapped
                     .into_iter()
@@ -964,8 +964,8 @@ humidity-to-location map:
                         let mut ranges = Vec::new();
                         for line in rest.trim().split('\n') {
                             let mut split = line.split_whitespace();
-                            let source_start: usize = split.next().unwrap().parse().unwrap();
                             let destination_start: usize = split.next().unwrap().parse().unwrap();
+                            let source_start: usize = split.next().unwrap().parse().unwrap();
                             let count: usize = split.next().unwrap().parse().unwrap();
                             ranges.push(Mapping {
                                 destination_start,
@@ -985,6 +985,45 @@ humidity-to-location map:
             .map(|range| *range.start())
             .min()
             .unwrap()
+    }
+
+    #[test]
+    fn part2_on_single() {
+        let input = "seeds: 82 1
+
+seed-to-soil map:
+50 98 2
+52 50 48
+
+soil-to-fertilizer map:
+0 15 37
+37 52 2
+39 0 15
+
+fertilizer-to-water map:
+49 53 8
+0 11 42
+42 0 7
+57 7 4
+
+water-to-light map:
+88 18 7
+18 25 70
+
+light-to-temperature map:
+45 77 23
+81 45 19
+68 64 13
+
+temperature-to-humidity map:
+0 69 1
+1 0 69
+
+humidity-to-location map:
+60 56 37
+56 93 4
+";
+        assert_eq!(part2(input), 46);
     }
     #[test]
     fn part2_on_sample() {

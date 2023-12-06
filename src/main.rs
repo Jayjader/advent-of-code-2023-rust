@@ -1070,6 +1070,27 @@ mod day6 {
         time: usize,
         distance_record: u64,
     }
+    impl Race {
+        pub fn ways_to_beat_record(&self) -> u64 {
+            let t_min = 0.5
+                * (self.time as f32
+                    - ((self.time.pow(2) as u64 - 4 * self.distance_record) as f32).sqrt());
+            let t_min = if t_min.ceil() == t_min {
+                t_min as u64 + 1
+            } else {
+                t_min.ceil() as u64
+            };
+            let t_max = 0.5
+                * (self.time as f32
+                    + ((self.time.pow(2) as u64 - 4 * self.distance_record) as f32).sqrt());
+            let t_max = if t_max.floor() == t_max {
+                t_max as u64 - 1
+            } else {
+                t_max.floor() as u64
+            };
+            t_max - t_min + 1
+        }
+    }
     fn parse_numbers<T: std::str::FromStr>(line: &str) -> impl Iterator<Item = T> + '_
     where
         <T as std::str::FromStr>::Err: std::fmt::Debug,
@@ -1078,7 +1099,7 @@ mod day6 {
             .skip(1)
             .map(|s| s.parse::<T>().unwrap())
     }
-    fn parse_races(input: &str) -> Vec<Race> {
+    fn parse_races(input: &str) -> impl Iterator<Item = Race> + '_ {
         let (times, distances) = input.trim().split_once('\n').unwrap();
         let times = parse_numbers(times);
         let distance_records = parse_numbers(distances);
@@ -1088,32 +1109,11 @@ mod day6 {
                 time,
                 distance_record,
             })
-            .collect()
     }
     pub fn part1(input: &str) -> usize {
-        let races = parse_races(input);
-        races
-            .iter()
-            .map(|race| {
-                let t_min = 0.5
-                    * (race.time as f32
-                        - ((race.time.pow(2) - 4 * race.distance_record as usize) as f32).sqrt());
-                let t_min = if t_min.ceil() == t_min {
-                    t_min as usize + 1
-                } else {
-                    t_min.ceil() as usize
-                };
-                let t_max = 0.5
-                    * (race.time as f32
-                        + ((race.time.pow(2) - 4 * race.distance_record as usize) as f32).sqrt());
-                let t_max = if t_max.floor() == t_max {
-                    t_max as usize - 1
-                } else {
-                    t_max.floor() as usize
-                };
-                t_max - t_min + 1
-            })
-            .product()
+        parse_races(input)
+            .map(|race| race.ways_to_beat_record())
+            .product::<u64>() as usize
     }
     #[test]
     fn part1_on_sample() {
@@ -1146,24 +1146,7 @@ Distance:  9  40  200
     }
 
     pub fn part2(input: &str) -> u64 {
-        let race = parse_race(input);
-        let t_min = 0.5
-            * (race.time as f64
-                - ((race.time.pow(2) as u64 - 4 * race.distance_record) as f64).sqrt());
-        let t_min = if t_min.ceil() == t_min {
-            t_min as u64 + 1
-        } else {
-            t_min.ceil() as u64
-        };
-        let t_max = 0.5
-            * (race.time as f64
-                + ((race.time.pow(2) as u64 - 4 * race.distance_record) as f64).sqrt());
-        let t_max = if t_max.floor() == t_max {
-            t_max as u64 - 1
-        } else {
-            t_max.floor() as u64
-        };
-        t_max - t_min + 1
+        parse_race(input).ways_to_beat_record()
     }
     #[test]
     fn part2_on_sample() {

@@ -1208,6 +1208,19 @@ mod day7 {
             .map(|(cards, winnings)| (H::parse_hand(parse_cards(cards)), winnings.parse().unwrap()))
             .collect()
     }
+    fn solve_part<C: ParseableAsCard + Ord>(input: &str) -> u64
+    where
+        Hand<C>: ParseableAsHand<C>,
+    {
+        let mut hands = parse_hands::<C, Hand<C>>(input);
+        hands.sort_by(|(a_hand, _), (b_hand, _)| a_hand.cmp(b_hand));
+        hands
+            .iter()
+            .enumerate()
+            .map(|(rank, (_, winnings))| (rank as u64 + 1) * winnings)
+            .sum()
+    }
+
     pub fn part1(input: &str) -> u64 {
         #[derive(Debug, PartialOrd, PartialEq, Ord, Eq, Hash, Copy, Clone)]
         enum Card {
@@ -1294,49 +1307,9 @@ mod day7 {
             }
         }
 
-        let mut hands = parse_hands::<Card, Hand<Card>>(input);
-        hands.sort_by(|(a_hand, _), (b_hand, _)| a_hand.cmp(b_hand));
-        hands
-            .iter()
-            .enumerate()
-            .map(|(rank, (_, winnings))| (rank as u64 + 1) * winnings)
-            .sum()
+        solve_part::<Card>(input)
     }
 
-    #[cfg(test)]
-    mod test_part_1 {
-        use crate::day7::part1;
-
-        #[test]
-        fn part1_on_sample() {
-            let input = "32T3K 765
-T55J5 684
-KK677 28
-KTJJT 220
-QQQJA 483
-";
-            assert_eq!(part1(input), 6440);
-        }
-        #[test]
-        fn part1_on_extra_sample() {
-            let input = "AAAAA 2
-22222 3
-AAAAK 5
-22223 7
-AAAKK 11
-22233 13
-AAAKQ 17
-22234 19
-AAKKQ 23
-22334 29
-AAKQJ 31
-22345 37
-AKQJT 41
-23456 43
-";
-            assert_eq!(part1(input), 1343);
-        }
-    }
     pub fn part2(input: &str) -> u64 {
         #[derive(Debug, PartialOrd, PartialEq, Ord, Eq, Hash, Copy, Clone)]
         enum Card {
@@ -1436,17 +1409,44 @@ AKQJT 41
                 }
             }
         }
-        let mut hands = parse_hands::<Card, Hand<Card>>(input);
-        hands.sort_by(|(a_hand, _), (b_hand, _)| a_hand.cmp(b_hand));
-        hands
-            .iter()
-            .enumerate()
-            .map(|(rank, (_, winnings))| (rank as u64 + 1) * winnings)
-            .sum()
+
+        solve_part::<Card>(input)
     }
+
     #[cfg(test)]
-    mod test_part_2 {
+    mod test_parts {
+        use crate::day7::part1;
         use crate::day7::part2;
+
+        #[test]
+        fn part1_on_sample() {
+            let input = "32T3K 765
+T55J5 684
+KK677 28
+KTJJT 220
+QQQJA 483
+";
+            assert_eq!(part1(input), 6440);
+        }
+        #[test]
+        fn part1_on_extra_sample() {
+            let input = "AAAAA 2
+22222 3
+AAAAK 5
+22223 7
+AAAKK 11
+22233 13
+AAAKQ 17
+22234 19
+AAKKQ 23
+22334 29
+AAKQJ 31
+22345 37
+AKQJT 41
+23456 43
+";
+            assert_eq!(part1(input), 1343);
+        }
 
         #[test]
         fn part2_on_sample() {

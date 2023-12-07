@@ -1159,435 +1159,140 @@ Distance:  9  40  200
 
 mod day7 {
     use counter::Counter;
-    use std::cmp::Ordering;
-    use std::ops::Deref;
-
-    #[derive(Debug, PartialOrd, PartialEq, Ord, Eq, Hash, Copy, Clone)]
-    enum Card {
-        Two,
-        Three,
-        Four,
-        Five,
-        Six,
-        Seven,
-        Eight,
-        Nine,
-        Ten,
-        Jack,
-        Queen,
-        King,
-        Ace,
-    }
-
-    fn parse_card(c: char) -> Card {
-        match c {
-            'A' => Card::Ace,
-            'K' => Card::King,
-            'Q' => Card::Queen,
-            'J' => Card::Jack,
-            'T' => Card::Ten,
-            '9' => Card::Nine,
-            '8' => Card::Eight,
-            '7' => Card::Seven,
-            '6' => Card::Six,
-            '5' => Card::Five,
-            '4' => Card::Four,
-            '3' => Card::Three,
-            '2' => Card::Two,
-            _ => panic!("unknown char for card encountered: {}", c),
-        }
-    }
-
-    fn parse_cards(cards: &str) -> [Card; 5] {
-        let mut chars = cards.chars();
-        [
-            parse_card(chars.next().unwrap()),
-            parse_card(chars.next().unwrap()),
-            parse_card(chars.next().unwrap()),
-            parse_card(chars.next().unwrap()),
-            parse_card(chars.next().unwrap()),
-        ]
-    }
-
-    #[cfg(test)]
-    mod test_cards {
-        use crate::day7::{parse_cards, Card};
-
-        #[test]
-        fn parse_cards_high_card() {
-            assert_eq!(
-                parse_cards("32T3K"),
-                [Card::Three, Card::Two, Card::Ten, Card::Three, Card::King],
-            );
-        }
-
-        #[test]
-        fn parse_cards_two_pair_ten_jack() {
-            assert_eq!(
-                parse_cards("KTJJT"),
-                [Card::King, Card::Ten, Card::Jack, Card::Jack, Card::Ten],
-            );
-        }
-
-        #[test]
-        fn parse_cards_two_pair_six_seven() {
-            assert_eq!(
-                parse_cards("KK677"),
-                [Card::King, Card::King, Card::Six, Card::Seven, Card::Seven],
-            );
-        }
-
-        #[test]
-        fn parse_cards_three_fives() {
-            assert_eq!(
-                parse_cards("T55J5"),
-                [Card::Ten, Card::Five, Card::Five, Card::Jack, Card::Five],
-            );
-        }
-
-        #[test]
-        fn parse_cards_three_queens() {
-            assert_eq!(
-                parse_cards("QQQJA"),
-                [Card::Queen, Card::Queen, Card::Queen, Card::Jack, Card::Ace],
-            );
-        }
-    }
-
-    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
-    enum HandType {
-        HighCard,
-        OnePair,
-        TwoPair,
-        ThreeOfAKind,
-        FullHouse,
-        FourOfAKind,
-        FiveOfAKind,
-    }
-    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-    struct Hand {
-        winning: HandType,
-        cards: [Card; 5],
-    }
-
-    impl Hand {
-        pub fn compute_type(cards: [Card; 5]) -> Hand {
-            let ordered_cards = {
-                let mut vec = cards.iter().collect::<Vec<_>>();
-                vec.sort_by(|a, b| b.cmp(a));
-                vec
-            };
-            let counts = ordered_cards.iter().collect::<Counter<_>>();
-            match counts.len() {
-                5 => Hand {
-                    winning: HandType::HighCard,
-                    cards,
-                },
-                4 => Hand {
-                    winning: HandType::OnePair,
-                    cards,
-                },
-                3 => {
-                    let ordered_by_count = counts.most_common_ordered();
-                    if ordered_by_count[0].1 == 3 {
-                        Hand {
-                            winning: HandType::ThreeOfAKind,
-                            cards,
-                        }
-                    } else {
-                        Hand {
-                            winning: HandType::TwoPair,
-                            cards,
-                        }
-                    }
-                }
-                2 => {
-                    let ordered_by_count = counts.most_common_ordered();
-                    if ordered_by_count[0].1 == 3 {
-                        Hand {
-                            winning: HandType::FullHouse,
-                            cards,
-                        }
-                    } else {
-                        Hand {
-                            winning: HandType::FourOfAKind,
-                            cards,
-                        }
-                    }
-                }
-                1 => Hand {
-                    winning: HandType::FiveOfAKind,
-                    cards,
-                },
-                _ => panic!("cards in hand not between 1 and 5"),
-            }
-        }
-    }
-
-    /*    impl PartialEq for HandType {
-           fn eq(&self, other: &Self) -> bool {
-               match (self, other) {
-                   (HandType::FiveOfAKind(a_card), HandType::FiveOfAKind(b_card)) => a_card.eq(b_card),
-                   (HandType::FourOfAKind(a_card), HandType::FourOfAKind(b_card)) => a_card.eq(b_card),
-                   (
-                       HandType::FullHouse {
-                           three_of: a_3,
-                           two_of: a_2,
-                       },
-                       HandType::FullHouse {
-                           three_of: b_3,
-                           two_of: b_2,
-                       },
-                   ) => a_3.eq(b_3) && a_2.eq(b_2),
-                   (HandType::ThreeOfAKind(a_card), HandType::ThreeOfAKind(b_card)) => {
-                       a_card.eq(b_card)
-                   }
-                   (
-                       HandType::TwoPair {
-                           high_pair: a_hp,
-                           low_pair: a_lp,
-                       },
-                       HandType::TwoPair {
-                           high_pair: b_hp,
-                           low_pair: b_lp,
-                       },
-                   ) => a_hp.eq(b_hp) && a_lp.eq(b_lp),
-                   (HandType::OnePair(a_card), HandType::OnePair(b_card)) => a_card.eq(b_card),
-                   (HandType::HighCard(a_card), HandType::HighCard(b_card)) => a_card.eq(b_card),
-                   (_, _) => false,
-               }
-           }
-       }
-       impl Eq for HandType {}
-
-    impl PartialOrd for HandType {
-        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-            Some(self.cmp(other))
-        }
-    }
-    impl Ord for HandType {
-        fn cmp(&self, other: &Self) -> Ordering {
-            match (self, other) {
-                (HandType::FiveOfAKind(a_card), HandType::FiveOfAKind(b_card)) => {
-                    a_card.cmp(b_card)
-                }
-                (HandType::FiveOfAKind(_), _) => Ordering::Greater,
-                (_, HandType::FiveOfAKind(_)) => Ordering::Less,
-                (HandType::FourOfAKind(a_card), HandType::FourOfAKind(b_card)) => {
-                    a_card.cmp(b_card)
-                }
-                (HandType::FourOfAKind(_), _) => Ordering::Greater,
-                (_, HandType::FourOfAKind(_)) => Ordering::Less,
-                (
-                    HandType::FullHouse {
-                        three_of: a_3,
-                        two_of: a_2,
-                    },
-                    HandType::FullHouse {
-                        three_of: b_3,
-                        two_of: b_2,
-                    },
-                ) => match a_3.cmp(b_3) {
-                    Ordering::Equal => a_2.cmp(b_2),
-                    ord => ord,
-                },
-                (HandType::FullHouse { .. }, _) => Ordering::Greater,
-                (_, HandType::FullHouse { .. }) => Ordering::Less,
-                (HandType::ThreeOfAKind(a_card), HandType::ThreeOfAKind(b_card)) => {
-                    a_card.cmp(b_card)
-                }
-                (HandType::ThreeOfAKind(_), _) => Ordering::Greater,
-                (_, HandType::ThreeOfAKind(_)) => Ordering::Less,
-                (
-                    HandType::TwoPair {
-                        high_pair: a_high_pair,
-                        low_pair: a_low_pair,
-                    },
-                    HandType::TwoPair {
-                        high_pair: b_high_pair,
-                        low_pair: b_low_pair,
-                    },
-                ) => match a_high_pair.cmp(b_high_pair) {
-                    Ordering::Equal => a_low_pair.cmp(b_low_pair),
-                    ord => ord,
-                },
-                (HandType::TwoPair { .. }, _) => Ordering::Greater,
-                (_, HandType::TwoPair { .. }) => Ordering::Less,
-                (HandType::OnePair(a_card), HandType::OnePair(b_card)) => a_card.cmp(b_card),
-                (HandType::OnePair(_), _) => Ordering::Greater,
-                (_, HandType::OnePair(_)) => Ordering::Less,
-                (HandType::HighCard(a_card), HandType::HighCard(b_card)) => a_card.cmp(b_card),
-            }
-        }
-    }
-    */
-    #[cfg(test)]
-    mod test_hand_parsing {
-        use crate::day7::{parse_hands, Card, Hand, HandType};
-        #[test]
-        fn three_of_a_kind() {
-            let hands = parse_hands("QQQJA 1234");
-            assert_eq!(
-                hands,
-                vec![(
-                    Hand {
-                        winning: HandType::ThreeOfAKind,
-                        cards: [Card::Queen, Card::Queen, Card::Queen, Card::Jack, Card::Ace]
-                    },
-                    1234
-                )]
-            );
-        }
-    }
-
-    /*
-    impl PartialOrd for Hand {
-        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-            Some(self.cmp(other))
-        }
-    }
-
-    impl Ord for Hand {
-        fn cmp(&self, other: &Self) -> Ordering {
-            match self.winning.partial_cmp(&other.winning).unwrap() {
-                Ordering::Equal => self.cards.cmp(&other.cards),
-                ord => ord,
-            }
-        }
-    }
-     */
-    #[cfg(test)]
-    mod test_hands {
-        use crate::day7::{parse_hands, Card, Hand, HandType};
-
-        #[test]
-        fn hand_ordering_high_cards() {
-            let hand1 = Hand {
-                winning: HandType::ThreeOfAKind,
-                cards: [Card::Queen, Card::Queen, Card::Queen, Card::Ace, Card::Jack],
-            };
-            let hand2 = Hand {
-                winning: HandType::ThreeOfAKind,
-                cards: [Card::Queen, Card::Queen, Card::Queen, Card::Ace, Card::Ten],
-            };
-            assert!(hand1 > hand2);
-            let hand1 = Hand {
-                winning: HandType::ThreeOfAKind,
-                cards: [Card::Queen, Card::Queen, Card::Queen, Card::Ace, Card::Jack],
-            };
-            let hand2 = Hand {
-                winning: HandType::ThreeOfAKind,
-                cards: [
-                    Card::King,
-                    Card::Queen,
-                    Card::Queen,
-                    Card::Queen,
-                    Card::Jack,
-                ],
-            };
-            assert!(hand1 < hand2);
-        }
-
-        #[test]
-        fn hand_ordering_sample() {
-            let input = "32T3K 765
-T55J5 684
-KK677 28
-KTJJT 220
-QQQJA 483
-";
-            let hands = parse_hands(input);
-            assert_eq!(
-                hands
-                    .iter()
-                    .map(|(hand, _)| hand.winning)
-                    .collect::<Vec<_>>(),
-                vec![
-                    HandType::OnePair,
-                    HandType::ThreeOfAKind,
-                    HandType::TwoPair,
-                    HandType::TwoPair,
-                    HandType::ThreeOfAKind
-                ]
-            );
-            for other_hand in &hands[1..] {
-                assert!(hands[0].0 < other_hand.0);
-            }
-            let mut hands = hands;
-            hands.sort_by(|(a_hand, _), (b_hand, _)| a_hand.cmp(b_hand));
-            assert_eq!(
-                hands
-                    .iter()
-                    .map(|(hand, _)| hand.winning)
-                    .collect::<Vec<_>>(),
-                vec![
-                    HandType::OnePair,
-                    HandType::TwoPair,
-                    HandType::TwoPair,
-                    HandType::ThreeOfAKind,
-                    HandType::ThreeOfAKind
-                ]
-            );
-            assert_eq!(
-                hands,
-                vec![
-                    (
-                        Hand {
-                            winning: HandType::OnePair,
-                            cards: [Card::Three, Card::Two, Card::Ten, Card::Three, Card::King]
-                        },
-                        765,
-                    ),
-                    (
-                        Hand {
-                            winning: HandType::TwoPair,
-                            cards: [Card::King, Card::Ten, Card::Jack, Card::Jack, Card::Ten]
-                        },
-                        220,
-                    ),
-                    (
-                        Hand {
-                            winning: HandType::TwoPair,
-                            cards: [Card::King, Card::King, Card::Six, Card::Seven, Card::Seven]
-                        },
-                        28,
-                    ),
-                    (
-                        Hand {
-                            winning: HandType::ThreeOfAKind,
-                            cards: [Card::Ten, Card::Five, Card::Five, Card::Jack, Card::Five]
-                        },
-                        684,
-                    ),
-                    (
-                        Hand {
-                            winning: HandType::ThreeOfAKind,
-                            cards: [Card::Queen, Card::Queen, Card::Queen, Card::Jack, Card::Ace]
-                        },
-                        483,
-                    )
-                ]
-            )
-        }
-    }
-    fn parse_hands(input: &str) -> Vec<(Hand, u64)> {
-        input
-            .trim()
-            .split('\n')
-            .map(|line| line.split_once(' ').unwrap())
-            .map(|(cards, winnings)| {
-                (
-                    Hand::compute_type(parse_cards(cards)),
-                    winnings.parse().unwrap(),
-                )
-            })
-            .collect()
-    }
 
     pub fn part1(input: &str) -> u64 {
+        #[derive(Debug, PartialOrd, PartialEq, Ord, Eq, Hash, Copy, Clone)]
+        enum Card {
+            Two,
+            Three,
+            Four,
+            Five,
+            Six,
+            Seven,
+            Eight,
+            Nine,
+            Ten,
+            Jack,
+            Queen,
+            King,
+            Ace,
+        }
+
+        fn parse_card(c: char) -> Card {
+            match c {
+                'A' => Card::Ace,
+                'K' => Card::King,
+                'Q' => Card::Queen,
+                'J' => Card::Jack,
+                'T' => Card::Ten,
+                '9' => Card::Nine,
+                '8' => Card::Eight,
+                '7' => Card::Seven,
+                '6' => Card::Six,
+                '5' => Card::Five,
+                '4' => Card::Four,
+                '3' => Card::Three,
+                '2' => Card::Two,
+                _ => panic!("unknown char for card encountered: {}", c),
+            }
+        }
+
+        fn parse_cards(cards: &str) -> [Card; 5] {
+            let mut chars = cards.chars();
+            [
+                parse_card(chars.next().unwrap()),
+                parse_card(chars.next().unwrap()),
+                parse_card(chars.next().unwrap()),
+                parse_card(chars.next().unwrap()),
+                parse_card(chars.next().unwrap()),
+            ]
+        }
+
+        #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+        enum HandType {
+            HighCard,
+            OnePair,
+            TwoPair,
+            ThreeOfAKind,
+            FullHouse,
+            FourOfAKind,
+            FiveOfAKind,
+        }
+        #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+        struct Hand {
+            winning: HandType,
+            cards: [Card; 5],
+        }
+
+        impl Hand {
+            pub fn compute_type(cards: [Card; 5]) -> Hand {
+                let ordered_cards = {
+                    let mut vec = cards.iter().collect::<Vec<_>>();
+                    vec.sort_by(|a, b| b.cmp(a));
+                    vec
+                };
+                let counts = ordered_cards.iter().collect::<Counter<_>>();
+                match counts.len() {
+                    5 => Hand {
+                        winning: HandType::HighCard,
+                        cards,
+                    },
+                    4 => Hand {
+                        winning: HandType::OnePair,
+                        cards,
+                    },
+                    3 => {
+                        let ordered_by_count = counts.most_common_ordered();
+                        if ordered_by_count[0].1 == 3 {
+                            Hand {
+                                winning: HandType::ThreeOfAKind,
+                                cards,
+                            }
+                        } else {
+                            Hand {
+                                winning: HandType::TwoPair,
+                                cards,
+                            }
+                        }
+                    }
+                    2 => {
+                        let ordered_by_count = counts.most_common_ordered();
+                        if ordered_by_count[0].1 == 3 {
+                            Hand {
+                                winning: HandType::FullHouse,
+                                cards,
+                            }
+                        } else {
+                            Hand {
+                                winning: HandType::FourOfAKind,
+                                cards,
+                            }
+                        }
+                    }
+                    1 => Hand {
+                        winning: HandType::FiveOfAKind,
+                        cards,
+                    },
+                    _ => panic!("cards in hand not between 1 and 5"),
+                }
+            }
+        }
+
+        fn parse_hands(input: &str) -> Vec<(Hand, u64)> {
+            input
+                .trim()
+                .split('\n')
+                .map(|line| line.split_once(' ').unwrap())
+                .map(|(cards, winnings)| {
+                    (
+                        Hand::compute_type(parse_cards(cards)),
+                        winnings.parse().unwrap(),
+                    )
+                })
+                .collect()
+        }
         let mut hands = parse_hands(input);
         hands.sort_by(|(a_hand, _), (b_hand, _)| a_hand.cmp(b_hand));
-        // dbg!(&hands);
         hands
             .iter()
             .enumerate()
@@ -1598,6 +1303,7 @@ QQQJA 483
     #[cfg(test)]
     mod test_part_1 {
         use crate::day7::part1;
+
         #[test]
         fn part1_on_sample() {
             let input = "32T3K 765
@@ -1628,7 +1334,163 @@ AKQJT 41
             assert_eq!(part1(input), 1343);
         }
     }
-    pub fn part2(input: &str) -> usize {
-        0
+    pub fn part2(input: &str) -> u64 {
+        #[derive(Debug, PartialOrd, PartialEq, Ord, Eq, Hash, Copy, Clone)]
+        enum Card {
+            Joker,
+            Two,
+            Three,
+            Four,
+            Five,
+            Six,
+            Seven,
+            Eight,
+            Nine,
+            Ten,
+            Queen,
+            King,
+            Ace,
+        }
+
+        fn parse_card(c: char) -> Card {
+            match c {
+                'A' => Card::Ace,
+                'K' => Card::King,
+                'Q' => Card::Queen,
+                'T' => Card::Ten,
+                '9' => Card::Nine,
+                '8' => Card::Eight,
+                '7' => Card::Seven,
+                '6' => Card::Six,
+                '5' => Card::Five,
+                '4' => Card::Four,
+                '3' => Card::Three,
+                '2' => Card::Two,
+                'J' => Card::Joker,
+                _ => panic!("unknown char for card encountered: {}", c),
+            }
+        }
+
+        fn parse_cards(cards: &str) -> [Card; 5] {
+            let mut chars = cards.chars();
+            [
+                parse_card(chars.next().unwrap()),
+                parse_card(chars.next().unwrap()),
+                parse_card(chars.next().unwrap()),
+                parse_card(chars.next().unwrap()),
+                parse_card(chars.next().unwrap()),
+            ]
+        }
+
+        #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+        enum HandType {
+            HighCard,
+            OnePair,
+            TwoPair,
+            ThreeOfAKind,
+            FullHouse,
+            FourOfAKind,
+            FiveOfAKind,
+        }
+        #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+        struct Hand {
+            winning: HandType,
+            cards: [Card; 5],
+        }
+        impl Hand {
+            pub fn compute_type(cards: [Card; 5]) -> Hand {
+                let counts = cards.iter().collect::<Counter<_>>();
+                Hand {
+                    winning: match (counts.len(), cards.contains(&Card::Joker)) {
+                        // 5
+                        (1, _) => HandType::FiveOfAKind,
+                        // 4j,1 -> five_of
+                        // 4,j -> five_of
+                        (2, true) => HandType::FiveOfAKind,
+                        // 4,1 | 3,2
+                        (2, false) => {
+                            if counts.k_most_common_ordered(2)[0].1 == 3 {
+                                // 3,2 => full_house
+                                HandType::FullHouse
+                            } else {
+                                // 4,1 -> four_of
+                                HandType::FourOfAKind
+                            }
+                        }
+                        // 3,1,1 | 2,2,1
+                        (3, true) => {
+                            let ordered = counts.k_most_common_ordered(3);
+                            if ordered[0].1 == 3 {
+                                // 3j,1,1 -> four_of
+                                // 3,j,1 | 3,1,j -> four_of
+                                HandType::FourOfAKind
+                            } else if *ordered.last().unwrap().0 == Card::Joker {
+                                // 2,2,j -> full_house
+                                HandType::FullHouse
+                            } else {
+                                // 2j,2,1 | 2,2j,1 -> four_of
+                                HandType::FourOfAKind
+                            }
+                        }
+                        // 3,1,1 | 2,2,1
+                        (3, false) => {
+                            let ordered = counts.k_most_common_ordered(3);
+                            if ordered[0].1 == 3 {
+                                // 3,1,1 -> three_of
+                                HandType::ThreeOfAKind
+                            } else {
+                                // 2,2,1 | 2,2,1 -> two_pair
+                                HandType::TwoPair
+                            }
+                        }
+                        // 2j,1,1,1 -> three_of
+                        // 2,j,1,1|2,1,j,1|2,1,1,j -> three_of
+                        (4, true) => HandType::ThreeOfAKind,
+                        // 2,1,1,1 -> one_pair
+                        (4, false) => HandType::OnePair,
+                        // j,1,1,1,1 | ... -> one_pair
+                        (5, true) => HandType::OnePair,
+                        (5, false) => HandType::HighCard,
+                        _ => panic!(),
+                    },
+                    cards,
+                }
+            }
+        }
+        fn parse_hands(input: &str) -> Vec<(Hand, u64)> {
+            input
+                .trim()
+                .split('\n')
+                .map(|line| line.split_once(' ').unwrap())
+                .map(|(cards, winnings)| {
+                    (
+                        Hand::compute_type(parse_cards(cards)),
+                        winnings.parse().unwrap(),
+                    )
+                })
+                .collect()
+        }
+        let mut hands = parse_hands(input);
+        hands.sort_by(|(a_hand, _), (b_hand, _)| a_hand.cmp(b_hand));
+        hands
+            .iter()
+            .enumerate()
+            .map(|(rank, (_, winnings))| (rank as u64 + 1) * winnings)
+            .sum()
+    }
+    #[cfg(test)]
+    mod test_part_2 {
+        use crate::day7::part2;
+
+        #[test]
+        fn part2_on_sample() {
+            let input = "32T3K 765
+T55J5 684
+KK677 28
+KTJJT 220
+QQQJA 483
+";
+            assert_eq!(part2(input), 5905);
+        }
     }
 }

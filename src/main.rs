@@ -1200,19 +1200,27 @@ mod day7 {
     trait ParseableAsHand<C: ParseableAsCard> {
         fn parse_hand(cards: [C; 5]) -> Self;
     }
-    fn parse_hands<C: ParseableAsCard, H: ParseableAsHand<C>>(input: &str) -> Vec<(H, u64)> {
+    fn parse_hands<C: ParseableAsCard>(input: &str) -> Vec<(Hand<C>, u64)>
+    where
+        Hand<C>: ParseableAsHand<C>,
+    {
         input
             .trim()
             .split('\n')
             .map(|line| line.split_once(' ').unwrap())
-            .map(|(cards, winnings)| (H::parse_hand(parse_cards(cards)), winnings.parse().unwrap()))
+            .map(|(cards, winnings)| {
+                (
+                    Hand::parse_hand(parse_cards(cards)),
+                    winnings.parse().unwrap(),
+                )
+            })
             .collect()
     }
     fn solve_part<C: ParseableAsCard + Ord>(input: &str) -> u64
     where
         Hand<C>: ParseableAsHand<C>,
     {
-        let mut hands = parse_hands::<C, Hand<C>>(input);
+        let mut hands = parse_hands(input);
         hands.sort_by(|(a_hand, _), (b_hand, _)| a_hand.cmp(b_hand));
         hands
             .iter()

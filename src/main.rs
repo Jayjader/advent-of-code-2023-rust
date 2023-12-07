@@ -1169,21 +1169,6 @@ mod day7 {
         }
     }
 
-    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
-    enum HandType {
-        HighCard,
-        OnePair,
-        TwoPair,
-        ThreeOfAKind,
-        FullHouse,
-        FourOfAKind,
-        FiveOfAKind,
-    }
-    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-    struct Hand<C> {
-        winning: HandType,
-        cards: [C; 5],
-    }
     trait ParseableAsCard {
         fn parse_card(c: char) -> Self;
     }
@@ -1196,6 +1181,21 @@ mod day7 {
             C::parse_card(chars.next().unwrap()),
             C::parse_card(chars.next().unwrap()),
         ]
+    }
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+    enum HandType {
+        HighCard,
+        OnePair,
+        TwoPair,
+        ThreeOfAKind,
+        FullHouse,
+        FourOfAKind,
+        FiveOfAKind,
+    }
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+    struct Hand<C: ParseableAsCard> {
+        winning: HandType,
+        cards: [C; 5],
     }
     trait ParseableAsHand<C: ParseableAsCard> {
         fn parse_hand(cards: [C; 5]) -> Self;

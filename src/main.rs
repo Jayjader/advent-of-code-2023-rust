@@ -1271,46 +1271,28 @@ mod day7 {
         impl ParseableAsHand<Card> for Hand<Card> {
             fn parse_hand(cards: [Card; 5]) -> Self {
                 let counts = cards.iter().collect::<Counter<_>>();
-                match counts.len() {
-                    5 => Hand {
-                        winning: HandType::HighCard,
-                        cards,
-                    },
-                    4 => Hand {
-                        winning: HandType::OnePair,
-                        cards,
-                    },
-                    3 => {
-                        if counts.top_count() == 3 {
-                            Hand {
-                                winning: HandType::ThreeOfAKind,
-                                cards,
-                            }
-                        } else {
-                            Hand {
-                                winning: HandType::TwoPair,
-                                cards,
+                Hand {
+                    winning: match counts.len() {
+                        5 => HandType::HighCard,
+                        4 => HandType::OnePair,
+                        3 => {
+                            if counts.top_count() == 3 {
+                                HandType::ThreeOfAKind
+                            } else {
+                                HandType::TwoPair
                             }
                         }
-                    }
-                    2 => {
-                        if counts.top_count() == 3 {
-                            Hand {
-                                winning: HandType::FullHouse,
-                                cards,
-                            }
-                        } else {
-                            Hand {
-                                winning: HandType::FourOfAKind,
-                                cards,
+                        2 => {
+                            if counts.top_count() == 3 {
+                                HandType::FullHouse
+                            } else {
+                                HandType::FourOfAKind
                             }
                         }
-                    }
-                    1 => Hand {
-                        winning: HandType::FiveOfAKind,
-                        cards,
+                        1 => HandType::FiveOfAKind,
+                        _ => panic!("cards in hand not between 1 and 5"),
                     },
-                    _ => panic!("cards in hand not between 1 and 5"),
+                    cards,
                 }
             }
         }
@@ -1361,54 +1343,34 @@ mod day7 {
                 let counts = cards.iter().collect::<Counter<_>>();
                 Hand {
                     winning: match (counts.len(), cards.contains(&Card::Joker)) {
-                        // 5
                         (1, _) => HandType::FiveOfAKind,
-                        // 4j,1 -> five_of
-                        // 4,j -> five_of
-                        // 3j,2 -> five_of
-                        // 3,2j -> five_of
                         (2, true) => HandType::FiveOfAKind,
-                        // 4,1 | 3,2
                         (2, false) => {
                             if counts.top_count() == 3 {
-                                // 3,2 => full_house
                                 HandType::FullHouse
                             } else {
-                                // 4,1 -> four_of
                                 HandType::FourOfAKind
                             }
                         }
-                        // 3,1,1 | 2,2,1
                         (3, true) => {
                             let ordered = counts.k_most_common_ordered(3);
                             if ordered[0].1 == 3 {
-                                // 3j,1,1 -> four_of
-                                // 3,j,1 | 3,1,j -> four_of
                                 HandType::FourOfAKind
                             } else if *ordered.last().unwrap().0 == Card::Joker {
-                                // 2,2,j -> full_house
                                 HandType::FullHouse
                             } else {
-                                // 2j,2,1 | 2,2j,1 -> four_of
                                 HandType::FourOfAKind
                             }
                         }
-                        // 3,1,1 | 2,2,1
                         (3, false) => {
                             if counts.top_count() == 3 {
-                                // 3,1,1 -> three_of
                                 HandType::ThreeOfAKind
                             } else {
-                                // 2,2,1 | 2,2,1 -> two_pair
                                 HandType::TwoPair
                             }
                         }
-                        // 2j,1,1,1 -> three_of
-                        // 2,j,1,1|2,1,j,1|2,1,1,j -> three_of
                         (4, true) => HandType::ThreeOfAKind,
-                        // 2,1,1,1 -> one_pair
                         (4, false) => HandType::OnePair,
-                        // j,1,1,1,1 | ... -> one_pair
                         (5, true) => HandType::OnePair,
                         (5, false) => HandType::HighCard,
                         _ => panic!("cards in hand not between 1 and 5"),
@@ -1423,8 +1385,6 @@ mod day7 {
 
     #[cfg(test)]
     mod test_parts {
-        use crate::day7::part1;
-        use crate::day7::part2;
 
         #[test]
         fn part1_on_sample() {
@@ -1434,7 +1394,7 @@ KK677 28
 KTJJT 220
 QQQJA 483
 ";
-            assert_eq!(part1(input), 6440);
+            assert_eq!(crate::day7::part1(input), 6440);
         }
         #[test]
         fn part1_on_extra_sample() {
@@ -1453,7 +1413,7 @@ AAKQJ 31
 AKQJT 41
 23456 43
 ";
-            assert_eq!(part1(input), 1343);
+            assert_eq!(crate::day7::part1(input), 1343);
         }
 
         #[test]
@@ -1464,7 +1424,7 @@ KK677 28
 KTJJT 220
 QQQJA 483
 ";
-            assert_eq!(part2(input), 5905);
+            assert_eq!(crate::day7::part2(input), 5905);
         }
     }
 }

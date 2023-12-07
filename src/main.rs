@@ -1169,9 +1169,19 @@ mod day7 {
         }
     }
 
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+    enum HandType {
+        HighCard,
+        OnePair,
+        TwoPair,
+        ThreeOfAKind,
+        FullHouse,
+        FourOfAKind,
+        FiveOfAKind,
+    }
     #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-    struct Hand<Handtype, C> {
-        winning: Handtype,
+    struct Hand<C> {
+        winning: HandType,
         cards: [C; 5],
     }
     trait ParseableAsCard {
@@ -1237,17 +1247,7 @@ mod day7 {
             }
         }
 
-        #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
-        enum HandType {
-            HighCard,
-            OnePair,
-            TwoPair,
-            ThreeOfAKind,
-            FullHouse,
-            FourOfAKind,
-            FiveOfAKind,
-        }
-        impl ParseableAsHand<Card> for Hand<HandType, Card> {
+        impl ParseableAsHand<Card> for Hand<Card> {
             fn parse_hand(cards: [Card; 5]) -> Self {
                 let counts = cards.iter().collect::<Counter<_>>();
                 match counts.len() {
@@ -1294,7 +1294,7 @@ mod day7 {
             }
         }
 
-        let mut hands = parse_hands::<Card, Hand<HandType, Card>>(input);
+        let mut hands = parse_hands::<Card, Hand<Card>>(input);
         hands.sort_by(|(a_hand, _), (b_hand, _)| a_hand.cmp(b_hand));
         hands
             .iter()
@@ -1375,17 +1375,7 @@ AKQJT 41
                 }
             }
         }
-        #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
-        enum HandType {
-            HighCard,
-            OnePair,
-            TwoPair,
-            ThreeOfAKind,
-            FullHouse,
-            FourOfAKind,
-            FiveOfAKind,
-        }
-        impl ParseableAsHand<Card> for Hand<HandType, Card> {
+        impl ParseableAsHand<Card> for Hand<Card> {
             fn parse_hand(cards: [Card; 5]) -> Self {
                 let counts = cards.iter().collect::<Counter<_>>();
                 Hand {
@@ -1446,7 +1436,7 @@ AKQJT 41
                 }
             }
         }
-        let mut hands = parse_hands::<Card, Hand<HandType, Card>>(input);
+        let mut hands = parse_hands::<Card, Hand<Card>>(input);
         hands.sort_by(|(a_hand, _), (b_hand, _)| a_hand.cmp(b_hand));
         hands
             .iter()

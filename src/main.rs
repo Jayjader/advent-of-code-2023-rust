@@ -1466,27 +1466,15 @@ mod day8 {
             .map(|c| c.try_into().unwrap())
             .cycle()
             .take_while(|instruction| {
-                if current_node != "ZZZ" {
-                    match instruction {
-                        Instruction::Right => {
-                            let (_, (_, next_node)) = mappings
-                                .iter()
-                                .find(|(node, (_, _))| *node == current_node)
-                                .unwrap();
-                            current_node = next_node;
-                        }
-                        Instruction::Left => {
-                            let (_, (next_node, _)) = mappings
-                                .iter()
-                                .find(|(node, (_, _))| *node == current_node)
-                                .unwrap();
-                            current_node = next_node;
-                        }
-                    }
-                    true
-                } else {
-                    false
-                }
+                let (_, (left, right)) = mappings
+                    .iter()
+                    .find(|(node, (_, _))| *node == current_node)
+                    .unwrap();
+                current_node = match instruction {
+                    Instruction::Right => right,
+                    Instruction::Left => left,
+                };
+                current_node != "ZZZ"
             })
             .count()
     }
@@ -1513,41 +1501,19 @@ mod day8 {
             {
                 break;
             }
-            match instruction {
-                Instruction::Right => {
-                    for (node_def, state) in current_nodes.iter_mut() {
-                        match state {
-                            NodeState::EndsWithZAfter(_) => continue,
-                            NodeState::SearchingForEndState(traversed) => {
-                                let (_, (_, next_node)) = mappings
-                                    .iter()
-                                    .find(|(node, (_, _))| node == node_def)
-                                    .unwrap();
-                                *node_def = next_node;
-                                *traversed += 1;
-                                if next_node.ends_with('Z') {
-                                    *state = NodeState::EndsWithZAfter(*traversed)
-                                }
-                            }
-                        }
-                    }
-                }
-                Instruction::Left => {
-                    for (node_def, state) in current_nodes.iter_mut() {
-                        match state {
-                            NodeState::EndsWithZAfter(_) => continue,
-                            NodeState::SearchingForEndState(traversed) => {
-                                let (_, (next_node, _)) = mappings
-                                    .iter()
-                                    .find(|(node, (_, _))| node == node_def)
-                                    .unwrap();
-                                *node_def = next_node;
-                                *traversed += 1;
-                                if next_node.ends_with('Z') {
-                                    *state = NodeState::EndsWithZAfter(*traversed)
-                                }
-                            }
-                        }
+            for (node_def, state) in current_nodes.iter_mut() {
+                if let NodeState::SearchingForEndState(traversed) = state {
+                    let (_, (left, right)) = mappings
+                        .iter()
+                        .find(|(node, (_, _))| node == node_def)
+                        .unwrap();
+                    *node_def = match instruction {
+                        Instruction::Right => right,
+                        Instruction::Left => left,
+                    };
+                    *traversed += 1;
+                    if node_def.ends_with('Z') {
+                        *state = NodeState::EndsWithZAfter(*traversed)
                     }
                 }
             }

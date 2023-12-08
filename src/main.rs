@@ -1383,22 +1383,19 @@ mod day7 {
         solve_part::<Card>(input)
     }
 
-    #[cfg(test)]
-    mod test_parts {
-
-        #[test]
-        fn part1_on_sample() {
-            let input = "32T3K 765
+    #[test]
+    fn part1_on_sample() {
+        let input = "32T3K 765
 T55J5 684
 KK677 28
 KTJJT 220
 QQQJA 483
 ";
-            assert_eq!(crate::day7::part1(input), 6440);
-        }
-        #[test]
-        fn part1_on_extra_sample() {
-            let input = "AAAAA 2
+        assert_eq!(part1(input), 6440);
+    }
+    #[test]
+    fn part1_on_extra_sample() {
+        let input = "AAAAA 2
 22222 3
 AAAAK 5
 22223 7
@@ -1413,19 +1410,18 @@ AAKQJ 31
 AKQJT 41
 23456 43
 ";
-            assert_eq!(crate::day7::part1(input), 1343);
-        }
+        assert_eq!(part1(input), 1343);
+    }
 
-        #[test]
-        fn part2_on_sample() {
-            let input = "32T3K 765
+    #[test]
+    fn part2_on_sample() {
+        let input = "32T3K 765
 T55J5 684
 KK677 28
 KTJJT 220
 QQQJA 483
 ";
-            assert_eq!(crate::day7::part2(input), 5905);
-        }
+        assert_eq!(part2(input), 5905);
     }
 }
 
@@ -1484,47 +1480,98 @@ mod day8 {
     pub fn part2(input: &str) -> usize {
         let (pattern, mappings) = input.split_once("\n\n").unwrap();
         let mappings = parse_mappings(mappings);
+        enum NodeState {
+            EndsWithZAfter(usize),
+            // nodes traversed until now
+            SearchingForEndState(usize),
+        }
         let mut current_nodes = mappings
             .iter()
             .filter_map(|(node, (_, _))| {
                 if node.ends_with('A') {
-                    Some(node)
+                    Some((node, NodeState::SearchingForEndState(0)))
                 } else {
                     None
                 }
             })
             .collect::<Vec<_>>();
-        repeat(pattern.chars())
-            .flatten()
-            .take_while(|next_char| {
-                if current_nodes.iter().all(|node| node.ends_with('Z')) {
-                    false
-                } else {
-                    match next_char {
-                        'R' => {
-                            for node_def in current_nodes.iter_mut() {
+        for instruction in repeat(pattern.chars()).flatten() {
+            if current_nodes
+                .iter()
+                .all(|(_, state)| matches!(state, NodeState::EndsWithZAfter(_)))
+            {
+                break;
+            }
+            match instruction {
+                'R' => {
+                    for (node_def, state) in current_nodes.iter_mut() {
+                        match state {
+                            NodeState::EndsWithZAfter(_) => continue,
+                            NodeState::SearchingForEndState(traversed) => {
                                 let (_, (_, next_node)) = mappings
                                     .iter()
                                     .find(|(node, (_, _))| node == *node_def)
                                     .unwrap();
                                 *node_def = next_node;
+                                *traversed += 1;
+                                if next_node.ends_with('Z') {
+                                    *state = NodeState::EndsWithZAfter(*traversed)
+                                }
                             }
                         }
-                        'L' => {
-                            for node_def in current_nodes.iter_mut() {
+                    }
+                }
+                'L' => {
+                    for (node_def, state) in current_nodes.iter_mut() {
+                        match state {
+                            NodeState::EndsWithZAfter(_) => continue,
+                            NodeState::SearchingForEndState(traversed) => {
                                 let (_, (next_node, _)) = mappings
                                     .iter()
                                     .find(|(node, (_, _))| node == *node_def)
                                     .unwrap();
                                 *node_def = next_node;
+                                *traversed += 1;
+                                if next_node.ends_with('Z') {
+                                    *state = NodeState::EndsWithZAfter(*traversed)
+                                }
                             }
                         }
-                        _ => panic!(),
                     }
-                    true
+                }
+                _ => panic!(),
+            }
+        }
+        current_nodes
+            .iter()
+            .map(|(_, state)| {
+                if let NodeState::EndsWithZAfter(traversed) = state {
+                    traversed
+                } else {
+                    &0
                 }
             })
-            .count()
+            .fold(1, |accum, next| lcm(accum, *next))
+    }
+    /// thank you https://rustp.org/number-theory/lcm/
+    fn gcd(mut a: usize, mut b: usize) -> usize {
+        if a == b {
+            return a;
+        }
+        if b > a {
+            std::mem::swap(&mut a, &mut b);
+        }
+        while b > 0 {
+            let temp = a;
+            a = b;
+            b = temp % b;
+        }
+        a
+    }
+
+    /// thank you https://rustp.org/number-theory/lcm/
+    fn lcm(a: usize, b: usize) -> usize {
+        a * (b / gcd(a, b))
     }
 
     #[test]

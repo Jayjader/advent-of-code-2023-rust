@@ -1,7 +1,7 @@
 fn main() {
-    let day7_input = include_str!("../input/day7");
-    println!("day 7, part 1: {}", day7::part1(day7_input));
-    println!("day 7, part 2: {}", day7::part2(day7_input));
+    let day8_input = include_str!("../input/day8");
+    println!("day 8, part 1: {}", day8::part1(day8_input));
+    println!("day 8, part 2: {}", day8::part2(day8_input));
 }
 
 mod day1 {
@@ -1426,5 +1426,59 @@ QQQJA 483
 ";
             assert_eq!(crate::day7::part2(input), 5905);
         }
+    }
+}
+
+mod day8 {
+    use std::iter::{repeat, repeat_with};
+
+    pub fn part1(input: &str) -> usize {
+        let (pattern, mappings) = input.split_once("\n\n").unwrap();
+        let mappings = mappings
+            .trim_start()
+            .split_terminator('\n')
+            .map(|line| line.split_once(" = ").unwrap())
+            .map(|(current_node, left_right)| {
+                (
+                    current_node,
+                    left_right
+                        .trim_matches(&['(', ')'][..])
+                        .split_once(", ")
+                        .unwrap(),
+                )
+            })
+            // .map(|(current_node, (left, right))|)
+            .collect::<Vec<_>>();
+        let mut current_node = "AAA";
+        repeat(pattern.chars())
+            .flatten()
+            .take_while(|next_char| {
+                if current_node != "ZZZ" {
+                    match next_char {
+                        'R' => {
+                            let (_, (_, next_node)) = mappings
+                                .iter()
+                                .find(|(node, (left, right))| *node == current_node)
+                                .unwrap();
+                            current_node = next_node;
+                        }
+                        'L' => {
+                            let (_, (next_node, _)) = mappings
+                                .iter()
+                                .find(|(node, (left, right))| *node == current_node)
+                                .unwrap();
+                            current_node = next_node;
+                        }
+                        _ => panic!(),
+                    }
+                    true
+                } else {
+                    false
+                }
+            })
+            .count()
+    }
+    pub fn part2(input: &str) -> u64 {
+        0
     }
 }

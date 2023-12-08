@@ -1460,27 +1460,37 @@ mod day8 {
         }
     }
     pub fn part1(input: &str) -> usize {
+        use itertools::{
+            FoldWhile::{Continue, Done},
+            Itertools,
+        };
         let (pattern, mappings) = input.split_once("\n\n").unwrap();
         let mappings = parse_mappings(mappings);
-        let mut current_node = "AAA";
-        pattern
+        let (_, count) = pattern
             .chars()
             .map(|c| c.try_into().unwrap())
             .cycle()
-            .take_while(|instruction| {
-                let (left, right) = mappings.get(current_node).unwrap();
-                current_node = match instruction {
-                    Instruction::Right => right,
-                    Instruction::Left => left,
-                };
-                current_node != "ZZZ"
+            .fold_while(("AAA", 0), |(accum, count), instruction| {
+                match *mappings
+                    .get(accum)
+                    .map(|(left, right)| match instruction {
+                        Instruction::Right => right,
+                        Instruction::Left => left,
+                    })
+                    .unwrap()
+                {
+                    "ZZZ" => Done(("ZZZ", count)),
+                    next_node => Continue((next_node, count + 1)),
+                }
             })
-            .count()
+            .into_inner();
+        count
     }
 
     pub fn part2(input: &str) -> usize {
         let (pattern, mappings) = input.split_once("\n\n").unwrap();
         let mappings = parse_mappings(mappings);
+        #[derive(Copy, Clone)]
         enum NodeState {
             EndsWithZAfter(usize),
             // nodes traversed until now

@@ -1430,11 +1430,10 @@ QQQJA 483
 }
 
 mod day8 {
-    use std::iter::{repeat, repeat_with};
+    use std::iter::repeat;
 
-    pub fn part1(input: &str) -> usize {
-        let (pattern, mappings) = input.split_once("\n\n").unwrap();
-        let mappings = mappings
+    fn parse_mappings(lines: &str) -> Vec<(&str, (&str, &str))> {
+        lines
             .trim_start()
             .split_terminator('\n')
             .map(|line| line.split_once(" = ").unwrap())
@@ -1447,8 +1446,11 @@ mod day8 {
                         .unwrap(),
                 )
             })
-            // .map(|(current_node, (left, right))|)
-            .collect::<Vec<_>>();
+            .collect::<Vec<_>>()
+    }
+    pub fn part1(input: &str) -> usize {
+        let (pattern, mappings) = input.split_once("\n\n").unwrap();
+        let mappings = parse_mappings(mappings);
         let mut current_node = "AAA";
         repeat(pattern.chars())
             .flatten()
@@ -1458,14 +1460,14 @@ mod day8 {
                         'R' => {
                             let (_, (_, next_node)) = mappings
                                 .iter()
-                                .find(|(node, (left, right))| *node == current_node)
+                                .find(|(node, (_, _))| *node == current_node)
                                 .unwrap();
                             current_node = next_node;
                         }
                         'L' => {
                             let (_, (next_node, _)) = mappings
                                 .iter()
-                                .find(|(node, (left, right))| *node == current_node)
+                                .find(|(node, (_, _))| *node == current_node)
                                 .unwrap();
                             current_node = next_node;
                         }
@@ -1478,7 +1480,66 @@ mod day8 {
             })
             .count()
     }
-    pub fn part2(input: &str) -> u64 {
-        0
+
+    pub fn part2(input: &str) -> usize {
+        let (pattern, mappings) = input.split_once("\n\n").unwrap();
+        let mappings = parse_mappings(mappings);
+        let mut current_nodes = mappings
+            .iter()
+            .filter_map(|(node, (_, _))| {
+                if node.ends_with('A') {
+                    Some(node)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        repeat(pattern.chars())
+            .flatten()
+            .take_while(|next_char| {
+                if current_nodes.iter().all(|node| node.ends_with('Z')) {
+                    false
+                } else {
+                    match next_char {
+                        'R' => {
+                            for node_def in current_nodes.iter_mut() {
+                                let (_, (_, next_node)) = mappings
+                                    .iter()
+                                    .find(|(node, (_, _))| node == *node_def)
+                                    .unwrap();
+                                *node_def = next_node;
+                            }
+                        }
+                        'L' => {
+                            for node_def in current_nodes.iter_mut() {
+                                let (_, (next_node, _)) = mappings
+                                    .iter()
+                                    .find(|(node, (_, _))| node == *node_def)
+                                    .unwrap();
+                                *node_def = next_node;
+                            }
+                        }
+                        _ => panic!(),
+                    }
+                    true
+                }
+            })
+            .count()
+    }
+
+    #[test]
+    fn part2_on_sample() {
+        let input = "LR
+
+11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX)
+";
+        assert_eq!(part2(input), 6);
     }
 }

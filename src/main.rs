@@ -1426,8 +1426,6 @@ QQQJA 483
 }
 
 mod day8 {
-    use std::iter::repeat;
-
     fn parse_mappings(lines: &str) -> Vec<(&str, (&str, &str))> {
         lines
             .trim_start()
@@ -1444,30 +1442,46 @@ mod day8 {
             })
             .collect::<Vec<_>>()
     }
+    enum Instruction {
+        Left,
+        Right,
+    }
+    impl TryFrom<char> for Instruction {
+        type Error = ();
+
+        fn try_from(value: char) -> Result<Self, Self::Error> {
+            match value {
+                'L' => Ok(Instruction::Left),
+                'R' => Ok(Instruction::Right),
+                _ => Err(()),
+            }
+        }
+    }
     pub fn part1(input: &str) -> usize {
         let (pattern, mappings) = input.split_once("\n\n").unwrap();
         let mappings = parse_mappings(mappings);
         let mut current_node = "AAA";
-        repeat(pattern.chars())
-            .flatten()
-            .take_while(|next_char| {
+        pattern
+            .chars()
+            .map(|c| c.try_into().unwrap())
+            .cycle()
+            .take_while(|instruction| {
                 if current_node != "ZZZ" {
-                    match next_char {
-                        'R' => {
+                    match instruction {
+                        Instruction::Right => {
                             let (_, (_, next_node)) = mappings
                                 .iter()
                                 .find(|(node, (_, _))| *node == current_node)
                                 .unwrap();
                             current_node = next_node;
                         }
-                        'L' => {
+                        Instruction::Left => {
                             let (_, (next_node, _)) = mappings
                                 .iter()
                                 .find(|(node, (_, _))| *node == current_node)
                                 .unwrap();
                             current_node = next_node;
                         }
-                        _ => panic!(),
                     }
                     true
                 } else {
@@ -1488,14 +1502,11 @@ mod day8 {
         let mut current_nodes = mappings
             .iter()
             .filter_map(|(node, (_, _))| {
-                if node.ends_with('A') {
-                    Some((node, NodeState::SearchingForEndState(0)))
-                } else {
-                    None
-                }
+                node.ends_with('A')
+                    .then_some((*node, NodeState::SearchingForEndState(0)))
             })
             .collect::<Vec<_>>();
-        for instruction in repeat(pattern.chars()).flatten() {
+        for instruction in pattern.chars().map(|c| c.try_into().unwrap()).cycle() {
             if current_nodes
                 .iter()
                 .all(|(_, state)| matches!(state, NodeState::EndsWithZAfter(_)))
@@ -1503,14 +1514,14 @@ mod day8 {
                 break;
             }
             match instruction {
-                'R' => {
+                Instruction::Right => {
                     for (node_def, state) in current_nodes.iter_mut() {
                         match state {
                             NodeState::EndsWithZAfter(_) => continue,
                             NodeState::SearchingForEndState(traversed) => {
                                 let (_, (_, next_node)) = mappings
                                     .iter()
-                                    .find(|(node, (_, _))| node == *node_def)
+                                    .find(|(node, (_, _))| node == node_def)
                                     .unwrap();
                                 *node_def = next_node;
                                 *traversed += 1;
@@ -1521,14 +1532,14 @@ mod day8 {
                         }
                     }
                 }
-                'L' => {
+                Instruction::Left => {
                     for (node_def, state) in current_nodes.iter_mut() {
                         match state {
                             NodeState::EndsWithZAfter(_) => continue,
                             NodeState::SearchingForEndState(traversed) => {
                                 let (_, (next_node, _)) = mappings
                                     .iter()
-                                    .find(|(node, (_, _))| node == *node_def)
+                                    .find(|(node, (_, _))| node == node_def)
                                     .unwrap();
                                 *node_def = next_node;
                                 *traversed += 1;
@@ -1539,16 +1550,15 @@ mod day8 {
                         }
                     }
                 }
-                _ => panic!(),
             }
         }
         current_nodes
             .iter()
-            .map(|(_, state)| {
+            .filter_map(|(_, state)| {
                 if let NodeState::EndsWithZAfter(traversed) = state {
-                    traversed
+                    Some(traversed)
                 } else {
-                    &0
+                    None
                 }
             })
             .fold(1, |accum, next| lcm(accum, *next))

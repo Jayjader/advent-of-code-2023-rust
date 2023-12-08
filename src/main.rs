@@ -1551,7 +1551,7 @@ mod day8 {
             })
             .fold(1, |accum, next| lcm(accum, *next))
     }
-    /// thank you https://rustp.org/number-theory/lcm/
+    /// thank you <https://rustp.org/number-theory/lcm/>
     fn gcd(mut a: usize, mut b: usize) -> usize {
         if a == b {
             return a;
@@ -1567,7 +1567,7 @@ mod day8 {
         a
     }
 
-    /// thank you https://rustp.org/number-theory/lcm/
+    /// thank you <https://rustp.org/number-theory/lcm/>
     fn lcm(a: usize, b: usize) -> usize {
         a * (b / gcd(a, b))
     }

@@ -1426,7 +1426,9 @@ QQQJA 483
 }
 
 mod day8 {
-    fn parse_mappings(lines: &str) -> Vec<(&str, (&str, &str))> {
+    use std::collections::BTreeMap;
+
+    fn parse_mappings(lines: &str) -> BTreeMap<&str, (&str, &str)> {
         lines
             .trim_start()
             .split_terminator('\n')
@@ -1440,7 +1442,7 @@ mod day8 {
                         .unwrap(),
                 )
             })
-            .collect::<Vec<_>>()
+            .collect()
     }
     enum Instruction {
         Left,
@@ -1466,10 +1468,7 @@ mod day8 {
             .map(|c| c.try_into().unwrap())
             .cycle()
             .take_while(|instruction| {
-                let (_, (left, right)) = mappings
-                    .iter()
-                    .find(|(node, (_, _))| *node == current_node)
-                    .unwrap();
+                let (left, right) = mappings.get(current_node).unwrap();
                 current_node = match instruction {
                     Instruction::Right => right,
                     Instruction::Left => left,
@@ -1503,10 +1502,7 @@ mod day8 {
             }
             for (node_def, state) in current_nodes.iter_mut() {
                 if let NodeState::SearchingForEndState(traversed) = state {
-                    let (_, (left, right)) = mappings
-                        .iter()
-                        .find(|(node, (_, _))| node == node_def)
-                        .unwrap();
+                    let (left, right) = mappings.get(node_def).unwrap();
                     *node_def = match instruction {
                         Instruction::Right => right,
                         Instruction::Left => left,

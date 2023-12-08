@@ -1466,25 +1466,41 @@ mod day8 {
         };
         let (pattern, mappings) = input.split_once("\n\n").unwrap();
         let mappings = parse_mappings(mappings);
-        let (_, count) = pattern
+        enum NodeState<NodeType> {
+            SearchingForEndState(NodeType),
+            Ended(usize),
+        }
+        if let NodeState::Ended(count) = pattern
             .chars()
             .map(|c| c.try_into().unwrap())
             .cycle()
-            .fold_while(("AAA", 0), |(accum, count), instruction| {
-                match *mappings
-                    .get(accum)
-                    .map(|(left, right)| match instruction {
-                        Instruction::Right => right,
-                        Instruction::Left => left,
-                    })
-                    .unwrap()
-                {
-                    "ZZZ" => Done(("ZZZ", count)),
-                    next_node => Continue((next_node, count + 1)),
-                }
-            })
-            .into_inner();
-        count
+            .enumerate()
+            .fold_while(
+                NodeState::SearchingForEndState("AAA"),
+                |accum, (count, instruction)| {
+                    if let NodeState::SearchingForEndState(node) = accum {
+                        match *mappings
+                            .get(node)
+                            .map(|(left, right)| match instruction {
+                                Instruction::Right => right,
+                                Instruction::Left => left,
+                            })
+                            .unwrap()
+                        {
+                            "ZZZ" => Done(NodeState::Ended(count)),
+                            next_node => Continue(NodeState::SearchingForEndState(next_node)),
+                        }
+                    } else {
+                        Done(accum)
+                    }
+                },
+            )
+            .into_inner()
+        {
+            count
+        } else {
+            panic!("fold_while ended on non-`Ended` state")
+        }
     }
 
     pub fn part2(input: &str) -> usize {

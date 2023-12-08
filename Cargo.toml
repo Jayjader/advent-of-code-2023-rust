@@ -7,4 +7,3 @@ edition = "2021"
 
 [dependencies]
 counter = "0.5.7"
-itertools = "0.12.0"

@@ -1460,52 +1460,51 @@ mod day8 {
         }
     }
     pub fn part1(input: &str) -> usize {
-        use itertools::{
-            FoldWhile::{Continue, Done},
-            Itertools,
-        };
         let (pattern, mappings) = input.split_once("\n\n").unwrap();
         let mappings = parse_mappings(mappings);
+        let instructions = pattern.chars().map(|c| c.try_into().unwrap());
+
+        #[derive(Copy, Clone)]
         enum NodeState<NodeType> {
             SearchingForEndState(NodeType),
             Ended(usize),
         }
-        if let NodeState::Ended(count) = pattern
-            .chars()
-            .map(|c| c.try_into().unwrap())
+        instructions
             .cycle()
             .enumerate()
-            .fold_while(
+            .scan(
                 NodeState::SearchingForEndState("AAA"),
                 |accum, (count, instruction)| {
                     if let NodeState::SearchingForEndState(node) = accum {
-                        match *mappings
+                        match mappings
                             .get(node)
-                            .map(|(left, right)| match instruction {
+                            .map(|(left, right)| *match instruction {
                                 Instruction::Right => right,
                                 Instruction::Left => left,
                             })
                             .unwrap()
                         {
-                            "ZZZ" => Done(NodeState::Ended(count)),
-                            next_node => Continue(NodeState::SearchingForEndState(next_node)),
+                            "ZZZ" => *accum = NodeState::Ended(count),
+                            next_node => *node = next_node,
                         }
-                    } else {
-                        Done(accum)
                     }
+                    // needed to derive Copy to do this, so not sure we're actually saving
+                    // on memory use compared to an externally-allocated mutable accumulator...
+                    // (at least it's still on the stack and not the heap)
+                    Some(*accum)
                 },
             )
-            .into_inner()
-        {
-            count
-        } else {
-            panic!("fold_while ended on non-`Ended` state")
-        }
+            .find_map(|state| match state {
+                NodeState::Ended(count) => Some(count),
+                NodeState::SearchingForEndState(_) => None,
+            })
+            .unwrap()
     }
 
     pub fn part2(input: &str) -> usize {
         let (pattern, mappings) = input.split_once("\n\n").unwrap();
         let mappings = parse_mappings(mappings);
+        let instructions = pattern.chars().map(|c| c.try_into().unwrap());
         #[derive(Copy, Clone)]
         enum NodeState {
             EndsWithZAfter(usize),
@@ -1519,7 +1518,7 @@ mod day8 {
                     .then_some((*node, NodeState::SearchingForEndState(0)))
             })
             .collect::<Vec<_>>();
-        for instruction in pattern.chars().map(|c| c.try_into().unwrap()).cycle() {
+        for instruction in instructions.cycle() {
             if current_nodes
                 .iter()
                 .all(|(_, state)| matches!(state, NodeState::EndsWithZAfter(_)))

@@ -1,7 +1,7 @@
 fn main() {
-    let day8_input = include_str!("../input/day8");
-    println!("day 8, part 1: {}", day8::part1(day8_input));
-    println!("day 8, part 2: {}", day8::part2(day8_input));
+    let day9_input = include_str!("../input/day9");
+    println!("day 9, part 1: {}", day9::part1(day9_input));
+    println!("day 9, part 2: {}", day9::part2(day9_input));
 }
 
 mod day1 {
@@ -1585,5 +1585,85 @@ mod day8 {
 XXX = (XXX, XXX)
 ";
         assert_eq!(part2(input), 6);
+    }
+}
+
+mod day9 {
+
+    fn compute_diffs(numbers: &Vec<i64>) -> Vec<i64> {
+        let diff_length = numbers.len() - 1;
+        numbers.iter().enumerate().take(diff_length).fold(
+            Vec::with_capacity(diff_length),
+            |mut accum, (index, next)| {
+                accum.push(numbers[index + 1] - next);
+                accum
+            },
+        )
+    }
+    pub fn part1(input: &str) -> isize {
+        input
+            .trim()
+            .split('\n')
+            .map(|line| {
+                line.split_whitespace()
+                    .map(|s| s.parse::<i64>().unwrap())
+                    .collect::<Vec<_>>()
+            })
+            .map(|numbers| {
+                let mut diff_record =
+                    vec![numbers.iter().enumerate().take(numbers.len() - 1).fold(
+                        Vec::with_capacity(numbers.len() - 1),
+                        |mut accum, (index, current)| {
+                            accum.push(numbers[index + 1] - current);
+                            accum
+                        },
+                    )];
+                loop {
+                    let last_level_diffs = diff_record.last_mut().unwrap();
+                    let current_level_diffs = compute_diffs(last_level_diffs);
+                    diff_record.push(current_level_diffs);
+                    if diff_record.last().unwrap().iter().all(|&d| d == 0) {
+                        break;
+                    }
+                }
+                dbg!(&diff_record);
+
+                // stop descent, start reverse ascent
+                for index_in_record in (0..(diff_record.len() - 1)).rev() {
+                    // get the immediately higher level's last value
+                    let &higher_levels_last = diff_record[index_in_record + 1].last().unwrap();
+                    // derive missing value for current diff level from the immediately higher level's last value
+                    let missing_value = dbg!(diff_record[index_in_record].last().unwrap())
+                        + dbg!(higher_levels_last);
+                    // extend current diff level's record with missing value
+                    diff_record[index_in_record].push(dbg!(missing_value));
+                }
+                let missing_diff_val = dbg!(diff_record.first().unwrap().last().unwrap());
+                dbg!(numbers.last().unwrap() + missing_diff_val) as isize
+            })
+            .sum()
+    }
+
+    #[test]
+    fn part1_on_first_sample_line() {
+        let input = "0 3 6 9 12 15\n";
+        assert_eq!(part1(input), 18);
+    }
+    #[test]
+    fn part1_on_second_sample_line() {
+        let input = "1 3 6 10 15 21\n";
+        assert_eq!(part1(input), 28);
+    }
+    #[test]
+    fn part1_on_sample() {
+        let input = "0 3 6 9 12 15
+1 3 6 10 15 21
+10 13 16 21 30 45
+";
+        assert_eq!(part1(input), 114);
+    }
+
+    pub fn part2(input: &str) -> usize {
+        0
     }
 }

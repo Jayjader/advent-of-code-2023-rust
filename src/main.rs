@@ -1589,13 +1589,14 @@ XXX = (XXX, XXX)
 }
 
 mod day9 {
+    use std::collections::VecDeque;
 
-    fn compute_diffs(numbers: &Vec<i64>) -> Vec<i64> {
+    fn compute_diffs(numbers: &VecDeque<i64>) -> VecDeque<i64> {
         let diff_length = numbers.len() - 1;
         numbers.iter().enumerate().take(diff_length).fold(
-            Vec::with_capacity(diff_length),
+            VecDeque::with_capacity(diff_length),
             |mut accum, (index, next)| {
-                accum.push(numbers[index + 1] - next);
+                accum.push_back(numbers[index + 1] - next);
                 accum
             },
         )
@@ -1612,9 +1613,9 @@ mod day9 {
             .map(|numbers| {
                 let mut diff_record =
                     vec![numbers.iter().enumerate().take(numbers.len() - 1).fold(
-                        Vec::with_capacity(numbers.len() - 1),
+                        VecDeque::with_capacity(numbers.len() - 1),
                         |mut accum, (index, current)| {
-                            accum.push(numbers[index + 1] - current);
+                            accum.push_back(numbers[index + 1] - current);
                             accum
                         },
                     )];
@@ -1630,14 +1631,14 @@ mod day9 {
                 // stop descent, start reverse ascent
                 for index_in_record in (0..(diff_record.len() - 1)).rev() {
                     // get the immediately higher level's last value
-                    let &higher_levels_last = diff_record[index_in_record + 1].last().unwrap();
+                    let &higher_levels_last = diff_record[index_in_record + 1].back().unwrap();
                     // derive missing value for current diff level from the immediately higher level's last value
                     let missing_value =
-                        diff_record[index_in_record].last().unwrap() + higher_levels_last;
+                        diff_record[index_in_record].back().unwrap() + higher_levels_last;
                     // extend current diff level's record with missing value
-                    diff_record[index_in_record].push(missing_value);
+                    diff_record[index_in_record].push_back(missing_value);
                 }
-                let missing_diff_val = diff_record.first().unwrap().last().unwrap();
+                let missing_diff_val = diff_record.first().unwrap().back().unwrap();
                 (numbers.last().unwrap() + missing_diff_val) as isize
             })
             .sum()
@@ -1662,7 +1663,25 @@ mod day9 {
         assert_eq!(part1(input), 114);
     }
 
-    pub fn part2(input: &str) -> usize {
+    pub fn part2(input: &str) -> isize {
         0
+    }
+    #[test]
+    fn part2_on_first_sample_line() {
+        let input = "0 3 6 9 12 15\n";
+        assert_eq!(part1(input), 18);
+    }
+    #[test]
+    fn part2_on_second_sample_line() {
+        let input = "1 3 6 10 15 21\n";
+        assert_eq!(part1(input), 28);
+    }
+    #[test]
+    fn part2_on_sample() {
+        let input = "0 3 6 9 12 15
+1 3 6 10 15 21
+10 13 16 21 30 45
+";
+        assert_eq!(part1(input), 114);
     }
 }

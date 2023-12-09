@@ -1701,7 +1701,7 @@ mod day9 {
                     current_diff_level.push_front(missing_value);
                 }
                 let missing_diff_val = diff_record.first().unwrap().front().unwrap();
-                dbg!((dbg!(numbers.first().unwrap()) - dbg!(missing_diff_val))) as isize
+                (numbers.first().unwrap() - missing_diff_val) as isize
             })
             .sum()
     }

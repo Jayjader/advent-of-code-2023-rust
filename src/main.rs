@@ -1626,20 +1626,19 @@ mod day9 {
                         break;
                     }
                 }
-                dbg!(&diff_record);
 
                 // stop descent, start reverse ascent
                 for index_in_record in (0..(diff_record.len() - 1)).rev() {
                     // get the immediately higher level's last value
                     let &higher_levels_last = diff_record[index_in_record + 1].last().unwrap();
                     // derive missing value for current diff level from the immediately higher level's last value
-                    let missing_value = dbg!(diff_record[index_in_record].last().unwrap())
-                        + dbg!(higher_levels_last);
+                    let missing_value =
+                        diff_record[index_in_record].last().unwrap() + higher_levels_last;
                     // extend current diff level's record with missing value
-                    diff_record[index_in_record].push(dbg!(missing_value));
+                    diff_record[index_in_record].push(missing_value);
                 }
-                let missing_diff_val = dbg!(diff_record.first().unwrap().last().unwrap());
-                dbg!(numbers.last().unwrap() + missing_diff_val) as isize
+                let missing_diff_val = diff_record.first().unwrap().last().unwrap();
+                (numbers.last().unwrap() + missing_diff_val) as isize
             })
             .sum()
     }

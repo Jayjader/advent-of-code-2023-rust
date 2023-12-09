@@ -1614,6 +1614,36 @@ mod day9 {
     }
     extend_for_day9!(Vec<i64>, VecDeque<i64>);
 
+    #[macro_export]
+    macro_rules! compute_diffs {
+        ($($record:ident)?) => {
+            $(loop {
+                $record.push($record.last().unwrap().compute_diffs());
+                if $record.last().unwrap().iter().all(|&d| d == 0) {
+                    break;
+                }
+            })?
+        };
+    }
+
+    #[macro_export]
+    macro_rules! complete_numbers {
+        ($record:ident, $accessor:ident, $mutator:ident, $completer:ident) => {
+            {
+                for index_in_record in (0..($record.len() - 1)).rev() {
+                    // get the immediately higher level's last value
+                    let &higher_levels_last = $accessor(&$record[index_in_record + 1]).unwrap();
+                    // derive missing value for current diff level from the immediately higher level's boundary value
+                    let current_diff_level = &mut $record[index_in_record];
+                    let missing_value = $completer(*$accessor(current_diff_level).unwrap() , higher_levels_last);
+                    // extend current diff level's record with missing value
+                    $mutator(current_diff_level, missing_value);
+                }
+                $accessor(&$record.first().unwrap()).unwrap()
+            }
+        };
+    }
+
     fn parse_numbers(input: &str) -> impl Iterator<Item = Vec<i64>> + '_ {
         input.trim().split('\n').map(|line| {
             line.split_whitespace()
@@ -1622,27 +1652,15 @@ mod day9 {
         })
     }
     pub fn part1(input: &str) -> isize {
+        use std::ops::Add;
         parse_numbers(input)
             .map(|numbers| {
                 let mut diff_record = vec![numbers.compute_diffs()];
-                loop {
-                    diff_record.push(diff_record.last().unwrap().compute_diffs());
-                    if diff_record.last().unwrap().iter().all(|&d| d == 0) {
-                        break;
-                    }
-                }
-
-                // stop descent, start reverse ascent
-                for index_in_record in (0..(diff_record.len() - 1)).rev() {
-                    // get the immediately higher level's last value
-                    let &higher_levels_last = diff_record[index_in_record + 1].back().unwrap();
-                    // derive missing value for current diff level from the immediately higher level's last value
-                    let current_diff_level = &mut diff_record[index_in_record];
-                    let missing_value = current_diff_level.back().unwrap() + higher_levels_last;
-                    // extend back of current diff level's record with missing value
-                    current_diff_level.push_back(missing_value);
-                }
-                let missing_diff_val = diff_record.first().unwrap().back().unwrap();
+                compute_diffs!(diff_record);
+                let accessor = VecDeque::back;
+                let mutator = VecDeque::push_back;
+                let completer: fn(i64, i64) -> <i64 as Add<i64>>::Output = i64::add;
+                let missing_diff_val = complete_numbers!(diff_record, accessor, mutator, completer);
                 (numbers.last().unwrap() + missing_diff_val) as isize
             })
             .sum()
@@ -1668,27 +1686,15 @@ mod day9 {
     }
 
     pub fn part2(input: &str) -> isize {
+        use std::ops::Sub;
         parse_numbers(input)
             .map(|numbers| {
                 let mut diff_record = vec![numbers.compute_diffs()];
-                loop {
-                    diff_record.push(diff_record.last().unwrap().compute_diffs());
-                    if diff_record.last().unwrap().iter().all(|&d| d == 0) {
-                        break;
-                    }
-                }
-
-                // stop descent, start reverse ascent
-                for index_in_record in (0..(diff_record.len() - 1)).rev() {
-                    // get the immediately higher level's first value
-                    let &higher_levels_first = diff_record[index_in_record + 1].front().unwrap();
-                    // derive missing value for current diff level from the immediately higher level's first value
-                    let current_diff_level = &mut diff_record[index_in_record];
-                    let missing_value = current_diff_level.front().unwrap() - higher_levels_first;
-                    // extend front of current diff level's record with missing value
-                    current_diff_level.push_front(missing_value);
-                }
-                let missing_diff_val = diff_record.first().unwrap().front().unwrap();
+                compute_diffs!(diff_record);
+                let accessor = VecDeque::front;
+                let mutator = VecDeque::push_front;
+                let completer: fn(i64, i64) -> <i64 as Sub<i64>>::Output = i64::sub;
+                let missing_diff_val = complete_numbers!(diff_record, accessor, mutator, completer);
                 (numbers.first().unwrap() - missing_diff_val) as isize
             })
             .sum()

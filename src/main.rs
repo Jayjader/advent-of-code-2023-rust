@@ -1664,17 +1664,61 @@ mod day9 {
     }
 
     pub fn part2(input: &str) -> isize {
-        0
+        input
+            .trim()
+            .split('\n')
+            .map(|line| {
+                line.split_whitespace()
+                    .map(|s| s.parse::<i64>().unwrap())
+                    .collect::<Vec<_>>()
+            })
+            .map(|numbers| {
+                let mut diff_record =
+                    vec![numbers.iter().enumerate().take(numbers.len() - 1).fold(
+                        VecDeque::with_capacity(numbers.len() - 1),
+                        |mut accum, (index, current)| {
+                            accum.push_back(numbers[index + 1] - current);
+                            accum
+                        },
+                    )];
+                loop {
+                    let last_level_diffs = diff_record.last_mut().unwrap();
+                    let current_level_diffs = compute_diffs(last_level_diffs);
+                    diff_record.push(current_level_diffs);
+                    if diff_record.last().unwrap().iter().all(|&d| d == 0) {
+                        break;
+                    }
+                }
+
+                // stop descent, start reverse ascent
+                for index_in_record in (0..(diff_record.len() - 1)).rev() {
+                    // get the immediately higher level's first value
+                    let &higher_levels_first = diff_record[index_in_record + 1].front().unwrap();
+                    // derive missing value for current diff level from the immediately higher level's last value
+                    let current_diff_level = &mut diff_record[index_in_record];
+                    let missing_value = current_diff_level.front().unwrap() - higher_levels_first;
+                    // extend current diff level's record with missing value
+                    current_diff_level.push_front(missing_value);
+                }
+                let missing_diff_val = diff_record.first().unwrap().front().unwrap();
+                dbg!((dbg!(numbers.first().unwrap()) - dbg!(missing_diff_val))) as isize
+            })
+            .sum()
     }
     #[test]
     fn part2_on_first_sample_line() {
         let input = "0 3 6 9 12 15\n";
-        assert_eq!(part1(input), 18);
+        assert_eq!(part2(input), -3);
     }
     #[test]
     fn part2_on_second_sample_line() {
         let input = "1 3 6 10 15 21\n";
-        assert_eq!(part1(input), 28);
+        assert_eq!(part2(input), 0);
+    }
+    #[test]
+    fn part2_on_third_sample_line() {
+        let input = "10 13 16 21 30 45\n";
+        assert_eq!(part2(input), 5);
     }
     #[test]
     fn part2_on_sample() {
@@ -1682,6 +1726,6 @@ mod day9 {
 1 3 6 10 15 21
 10 13 16 21 30 45
 ";
-        assert_eq!(part1(input), 114);
+        assert_eq!(part2(input), 2);
     }
 }

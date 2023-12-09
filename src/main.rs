@@ -1591,38 +1591,42 @@ XXX = (XXX, XXX)
 mod day9 {
     use std::collections::VecDeque;
 
-    fn compute_diffs(numbers: &VecDeque<i64>) -> VecDeque<i64> {
-        let diff_length = numbers.len() - 1;
-        numbers.iter().enumerate().take(diff_length).fold(
-            VecDeque::with_capacity(diff_length),
-            |mut accum, (index, next)| {
-                accum.push_back(numbers[index + 1] - next);
-                accum
-            },
-        )
+    trait VecAndVecDequeExtForDay9 {
+        fn compute_diffs(&self) -> VecDeque<i64>;
     }
-    pub fn part1(input: &str) -> isize {
-        input
-            .trim()
-            .split('\n')
-            .map(|line| {
-                line.split_whitespace()
-                    .map(|s| s.parse::<i64>().unwrap())
-                    .collect::<Vec<_>>()
-            })
-            .map(|numbers| {
-                let mut diff_record =
-                    vec![numbers.iter().enumerate().take(numbers.len() - 1).fold(
-                        VecDeque::with_capacity(numbers.len() - 1),
-                        |mut accum, (index, current)| {
-                            accum.push_back(numbers[index + 1] - current);
+    #[macro_export]
+    macro_rules! extend_for_day9 {
+        ($($t:ty),+) => {
+            $(
+            impl VecAndVecDequeExtForDay9 for $t {
+                fn compute_diffs(&self) -> VecDeque<i64> {
+                    let diff_length = self.len() - 1;
+                    self.iter().enumerate().take(diff_length).fold(
+                        VecDeque::with_capacity(diff_length),
+                        |mut accum, (index, next)| {
+                            accum.push_back(self[index + 1] - next);
                             accum
                         },
-                    )];
+                    )
+                }
+            })+
+        };
+    }
+    extend_for_day9!(Vec<i64>, VecDeque<i64>);
+
+    fn parse_numbers(input: &str) -> impl Iterator<Item = Vec<i64>> + '_ {
+        input.trim().split('\n').map(|line| {
+            line.split_whitespace()
+                .map(|s| s.parse::<i64>().unwrap())
+                .collect::<Vec<_>>()
+        })
+    }
+    pub fn part1(input: &str) -> isize {
+        parse_numbers(input)
+            .map(|numbers| {
+                let mut diff_record = vec![numbers.compute_diffs()];
                 loop {
-                    let last_level_diffs = diff_record.last_mut().unwrap();
-                    let current_level_diffs = compute_diffs(last_level_diffs);
-                    diff_record.push(current_level_diffs);
+                    diff_record.push(diff_record.last().unwrap().compute_diffs());
                     if diff_record.last().unwrap().iter().all(|&d| d == 0) {
                         break;
                     }
@@ -1633,10 +1637,10 @@ mod day9 {
                     // get the immediately higher level's last value
                     let &higher_levels_last = diff_record[index_in_record + 1].back().unwrap();
                     // derive missing value for current diff level from the immediately higher level's last value
-                    let missing_value =
-                        diff_record[index_in_record].back().unwrap() + higher_levels_last;
-                    // extend current diff level's record with missing value
-                    diff_record[index_in_record].push_back(missing_value);
+                    let current_diff_level = &mut diff_record[index_in_record];
+                    let missing_value = current_diff_level.back().unwrap() + higher_levels_last;
+                    // extend back of current diff level's record with missing value
+                    current_diff_level.push_back(missing_value);
                 }
                 let missing_diff_val = diff_record.first().unwrap().back().unwrap();
                 (numbers.last().unwrap() + missing_diff_val) as isize
@@ -1664,27 +1668,11 @@ mod day9 {
     }
 
     pub fn part2(input: &str) -> isize {
-        input
-            .trim()
-            .split('\n')
-            .map(|line| {
-                line.split_whitespace()
-                    .map(|s| s.parse::<i64>().unwrap())
-                    .collect::<Vec<_>>()
-            })
+        parse_numbers(input)
             .map(|numbers| {
-                let mut diff_record =
-                    vec![numbers.iter().enumerate().take(numbers.len() - 1).fold(
-                        VecDeque::with_capacity(numbers.len() - 1),
-                        |mut accum, (index, current)| {
-                            accum.push_back(numbers[index + 1] - current);
-                            accum
-                        },
-                    )];
+                let mut diff_record = vec![numbers.compute_diffs()];
                 loop {
-                    let last_level_diffs = diff_record.last_mut().unwrap();
-                    let current_level_diffs = compute_diffs(last_level_diffs);
-                    diff_record.push(current_level_diffs);
+                    diff_record.push(diff_record.last().unwrap().compute_diffs());
                     if diff_record.last().unwrap().iter().all(|&d| d == 0) {
                         break;
                     }
@@ -1694,10 +1682,10 @@ mod day9 {
                 for index_in_record in (0..(diff_record.len() - 1)).rev() {
                     // get the immediately higher level's first value
                     let &higher_levels_first = diff_record[index_in_record + 1].front().unwrap();
-                    // derive missing value for current diff level from the immediately higher level's last value
+                    // derive missing value for current diff level from the immediately higher level's first value
                     let current_diff_level = &mut diff_record[index_in_record];
                     let missing_value = current_diff_level.front().unwrap() - higher_levels_first;
-                    // extend current diff level's record with missing value
+                    // extend front of current diff level's record with missing value
                     current_diff_level.push_front(missing_value);
                 }
                 let missing_diff_val = diff_record.first().unwrap().front().unwrap();
@@ -1705,6 +1693,7 @@ mod day9 {
             })
             .sum()
     }
+
     #[test]
     fn part2_on_first_sample_line() {
         let input = "0 3 6 9 12 15\n";

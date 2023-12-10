@@ -1872,57 +1872,56 @@ mod day10 {
         .into_iter()
         .filter(|&((x, y), _)| (x, y) != *p)
     }
-    pub fn part1(input: &str) -> usize {
-        let grid = input
+    struct Grid {
+        width: usize,
+        height: usize,
+        cells: Vec<Vec<GridCell>>,
+        start: Position,
+    }
+    fn parse_grid(input: &str) -> Grid {
+        let mut start = Position::default();
+        let cells = input
             .trim()
             .split('\n')
-            .map(|line| {
+            .enumerate()
+            .map(|(y, line)| {
                 line.chars()
                     .flat_map(<char as TryInto<GridCell>>::try_into)
+                    .enumerate()
+                    .map(|(x, cell)| {
+                        if let GridCell::Pipe(openings) = cell {
+                            if openings == Pipe::Start.get_openings() {
+                                start = (x, y);
+                            }
+                        }
+                        cell
+                    })
                     .collect::<Vec<GridCell>>()
             })
             .collect::<Vec<_>>();
-        let (width, height) = (grid[0].len(), grid.len());
-        let (start_y, start_line) = grid
-            .iter()
-            .enumerate()
-            .find(|(_, line)| {
-                line.contains(&GridCell::Pipe(PipeOpenings {
-                    north: true,
-                    south: true,
-                    east: true,
-                    west: true,
-                }))
-            })
-            .unwrap();
-        let (start_x, _) = start_line
-            .iter()
-            .enumerate()
-            .find(|(_, cell)| {
-                matches!(
-                    cell,
-                    &GridCell::Pipe(PipeOpenings {
-                        north: true,
-                        south: true,
-                        east: true,
-                        west: true,
-                    })
-                )
-            })
-            .unwrap();
+        let (width, height) = (cells[0].len(), cells.len());
+        Grid {
+            width,
+            height,
+            cells,
+            start,
+        }
+    }
+    pub fn part1(input: &str) -> usize {
+        let grid = parse_grid(input);
         let mut loop_from_start: Vec<(Position, PipeOpenings)> =
-            vec![((start_x, start_y), Pipe::Start.get_openings())];
+            vec![((grid.start.0, grid.start.1), Pipe::Start.get_openings())];
         loop {
             let &((tail_x, tail_y), tail_openings) = loop_from_start.last().unwrap();
             let mut existing_connection_count = 0;
-            for ((x, y), direction) in get_neighbors(&(tail_x, tail_y), width, height) {
+            for ((x, y), direction) in get_neighbors(&(tail_x, tail_y), grid.width, grid.height) {
                 if loop_from_start.iter().any(|(pos, openings)| {
                     pos == &(x, y) && tail_openings.can_connect(&direction, openings)
                 }) {
                     existing_connection_count += 1;
                     continue;
                 }
-                if let GridCell::Pipe(openings) = &grid[y][x] {
+                if let GridCell::Pipe(openings) = &grid.cells[y][x] {
                     if tail_openings.can_connect(&direction, openings) {
                         loop_from_start.push(((x, y), *openings));
                         break;

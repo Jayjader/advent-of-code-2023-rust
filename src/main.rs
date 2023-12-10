@@ -1878,71 +1878,74 @@ mod day10 {
         cells: Vec<Vec<GridCell>>,
         start: Position,
     }
-    fn parse_grid(input: &str) -> Grid {
-        let mut start = Position::default();
-        let cells = input
-            .trim()
-            .split('\n')
-            .enumerate()
-            .map(|(y, line)| {
-                line.chars()
-                    .flat_map(<char as TryInto<GridCell>>::try_into)
-                    .enumerate()
-                    .map(|(x, cell)| {
-                        if let GridCell::Pipe(openings) = cell {
-                            if openings == Pipe::Start.get_openings() {
-                                start = (x, y);
+    impl Grid {
+        fn parse(input: &str) -> Grid {
+            let mut start = Position::default();
+            let cells = input
+                .trim()
+                .split('\n')
+                .enumerate()
+                .map(|(y, line)| {
+                    line.chars()
+                        .flat_map(<char as TryInto<GridCell>>::try_into)
+                        .enumerate()
+                        .map(|(x, cell)| {
+                            if let GridCell::Pipe(openings) = cell {
+                                if openings == Pipe::Start.get_openings() {
+                                    start = (x, y);
+                                }
                             }
-                        }
-                        cell
-                    })
-                    .collect::<Vec<GridCell>>()
-            })
-            .collect::<Vec<_>>();
-        let (width, height) = (cells[0].len(), cells.len());
-        Grid {
-            width,
-            height,
-            cells,
-            start,
+                            cell
+                        })
+                        .collect::<Vec<GridCell>>()
+                })
+                .collect::<Vec<_>>();
+            let (width, height) = (cells[0].len(), cells.len());
+            Grid {
+                width,
+                height,
+                cells,
+                start,
+            }
         }
-    }
-    pub fn part1(input: &str) -> usize {
-        let grid = parse_grid(input);
-        let mut loop_from_start: Vec<(Position, PipeOpenings)> =
-            vec![(grid.start, Pipe::Start.get_openings())];
-        let mut found_head = false;
-        while !found_head {
-            let &((tail_x, tail_y), tail_openings) = loop_from_start.last().unwrap();
-            for ((x, y), direction_from_tail) in
-                get_neighbors(&(tail_x, tail_y), grid.width, grid.height)
-            {
-                if let GridCell::Pipe(neighbor_openings) = &grid.cells[y][x] {
-                    if tail_openings.can_connect(&direction_from_tail, neighbor_openings) {
-                        let &(start, _) = loop_from_start.first().unwrap();
-                        let (previous, _) =
-                            loop_from_start[loop_from_start.len().saturating_sub(2)];
-                        // if we can connect, then this is one of:
-                        // 1. the previous cell in the loop segment
-                        if (x, y) == previous {
-                            continue;
+        fn find_loop(&self, start: &Position) -> Vec<(Position, PipeOpenings)> {
+            let mut loop_segment: Vec<(Position, PipeOpenings)> =
+                vec![(*start, Pipe::Start.get_openings())];
+            let mut found_head = false;
+            while !found_head {
+                let &((tail_x, tail_y), tail_openings) = loop_segment.last().unwrap();
+                for ((x, y), direction_from_tail) in
+                    get_neighbors(&(tail_x, tail_y), self.width, self.height)
+                {
+                    if let GridCell::Pipe(neighbor_openings) = &self.cells[y][x] {
+                        if tail_openings.can_connect(&direction_from_tail, neighbor_openings) {
+                            // if we can connect, then this is one of:
+                            let &(start, _) = loop_segment.first().unwrap();
+                            let (previous, _) = loop_segment[loop_segment.len().saturating_sub(2)];
+                            if (x, y) == previous {
+                                // 1. the previous cell in the loop segment
+                                continue;
+                            }
+                            if (x, y) == start {
+                                // 2. the start of the loop segment
+                                found_head = true;
+                            } else {
+                                // 3. simply the next cell in the loop segment
+                                loop_segment.push(((x, y), *neighbor_openings));
+                            }
+                            // we've either extended or completed the loop segment,
+                            // so we can skip considering the remaining neighbor cells
+                            break;
                         }
-                        // 2. the start of the loop segment
-                        if (x, y) == start {
-                            found_head = true;
-                        }
-                        // 3. simply the next cell in the loop segment
-                        else {
-                            loop_from_start.push(((x, y), *neighbor_openings));
-                        }
-                        // we've either extended or completed the loop segment,
-                        // so we can skip considering the remaining neighbor cells
-                        break;
                     }
                 }
             }
+            loop_segment
         }
-        loop_from_start.len() / 2
+    }
+    pub fn part1(input: &str) -> usize {
+        let grid = Grid::parse(input);
+        grid.find_loop(&grid.start).len() / 2
     }
     #[test]
     fn part1_on_first_sample() {

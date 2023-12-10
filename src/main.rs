@@ -1726,7 +1726,6 @@ mod day9 {
 }
 
 mod day10 {
-    use std::collections::{BTreeMap, BinaryHeap, VecDeque};
 
     #[derive(Debug, Eq, PartialEq, Copy, Clone)]
     enum Pipe {
@@ -1854,9 +1853,7 @@ mod day10 {
             }
         }
     }
-    type Distance = usize;
     type Position = (usize, usize);
-    type Connections = BTreeMap<Position, Vec<Position>>;
     pub fn part1(input: &str) -> usize {
         let grid = input
             .trim()
@@ -1868,17 +1865,6 @@ mod day10 {
             })
             .collect::<Vec<_>>();
         let (width, height) = (grid[0].len(), grid.len());
-        /*        let mut connections: Connections = BTreeMap::new();
-                for (y, row) in grid.iter().enumerate() {
-                    for (x, cell) in row.iter().enumerate() {
-                        if let GridCell::Pipe(pipe) = cell {
-                            let mut connected = Vec::new();
-                            let n_x = x.saturating_sub(1);
-                            connections.insert((x, y), connected);
-                        }
-                    }
-                }
-        */
         let (start_y, start_line) = grid
             .iter()
             .enumerate()
@@ -1908,68 +1894,9 @@ mod day10 {
             .unwrap();
         let mut loop_from_start: Vec<(Position, PipeOpenings)> =
             vec![((start_x, start_y), Pipe::Start.get_openings())];
-        dbg!(&loop_from_start);
-        /*        {
-            let neighbor_x = start_x.saturating_sub(1);
-            if let GridCell::Pipe(openings) = &grid[start_y][neighbor_x] {
-                if can_connect(
-                    &loop_from_start.first().unwrap().1,
-                    openings,
-                    Direction::West,
-                ) {
-                    loop_from_start.push(((neighbor_x, start_y), *openings));
-                }
-            }
-        }
-        {
-            // (start_x, start_y.saturating_sub(1)),
-            let neighbor_y = start_y.saturating_sub(1);
-            if loop_from_start.len() == 1 {
-                if let GridCell::Pipe(openings) = &grid[neighbor_y][start_x] {
-                    if can_connect(
-                        &loop_from_start.first().unwrap().1,
-                        openings,
-                        Direction::South,
-                    ) {
-                        loop_from_start.push(((start_x, neighbor_y), *openings));
-                    }
-                }
-            }
-        }
-        {
-            // ((start_x + 1).min(width), start_y),
-            let neighbor_x = (start_x + 1).min(width);
-            if loop_from_start.len() == 1 {
-                if let GridCell::Pipe(openings) = &grid[start_y][neighbor_x] {
-                    if can_connect(
-                        &loop_from_start.first().unwrap().1,
-                        openings,
-                        Direction::East,
-                    ) {
-                        loop_from_start.push(((neighbor_x, start_y), *openings));
-                    }
-                }
-            }
-        }
-        {
-            // (start_x, (start_y + 1).min(height)),
-            let neighbor_y = (start_y + 1).min(height);
-            if loop_from_start.len() == 1 {
-                if let GridCell::Pipe(openings) = &grid[neighbor_y][start_x] {
-                    if can_connect(
-                        &loop_from_start.first().unwrap().1,
-                        openings,
-                        Direction::East,
-                    ) {
-                        loop_from_start.push(((start_x, neighbor_y), *openings));
-                    }
-                }
-            }
-        }*/
         loop {
             let &((tail_x, tail_y), tail_pipe) = loop_from_start.last().unwrap();
             let mut existing_connection_count = 0;
-            let mut new_connection_count = 0;
             {
                 // check western neighbor for connecting pipe
                 let (x, y) = (tail_x.saturating_sub(1), tail_y);
@@ -2030,14 +1957,12 @@ mod day10 {
                     }
                 }
             }
-            dbg!(&(existing_connection_count));
             if existing_connection_count > 1 {
                 // looped
                 break;
             }
-            dbg!(&loop_from_start);
         }
-        return loop_from_start.len() / 2;
+        loop_from_start.len() / 2
     }
     #[test]
     fn part1_on_first_sample() {

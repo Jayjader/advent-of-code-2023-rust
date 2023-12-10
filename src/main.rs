@@ -1737,6 +1737,7 @@ mod day10 {
         SouthEastBend,
         Start,
     }
+    #[derive(Debug)]
     enum Direction {
         North,
         South,
@@ -1798,27 +1799,29 @@ mod day10 {
             }
         }
     }
-    fn can_connect(from_: &PipeOpenings, to_: &PipeOpenings, compass_direction: Direction) -> bool {
-        matches!(
-            (from_, compass_direction, to_),
-            (
-                PipeOpenings { north: true, .. },
-                Direction::North,
-                PipeOpenings { south: true, .. }
-            ) | (
-                PipeOpenings { south: true, .. },
-                Direction::South,
-                PipeOpenings { north: true, .. }
-            ) | (
-                PipeOpenings { east: true, .. },
-                Direction::East,
-                PipeOpenings { west: true, .. }
-            ) | (
-                PipeOpenings { west: true, .. },
-                Direction::West,
-                PipeOpenings { east: true, .. }
+    impl PipeOpenings {
+        fn can_connect(&self, compass_direction: &Direction, to_: &PipeOpenings) -> bool {
+            matches!(
+                (self, compass_direction, to_),
+                (
+                    PipeOpenings { north: true, .. },
+                    Direction::North,
+                    PipeOpenings { south: true, .. }
+                ) | (
+                    PipeOpenings { south: true, .. },
+                    Direction::South,
+                    PipeOpenings { north: true, .. }
+                ) | (
+                    PipeOpenings { east: true, .. },
+                    Direction::East,
+                    PipeOpenings { west: true, .. }
+                ) | (
+                    PipeOpenings { west: true, .. },
+                    Direction::West,
+                    PipeOpenings { east: true, .. }
+                )
             )
-        )
+        }
     }
     #[derive(Debug, Eq, PartialEq)]
     enum GridCell {
@@ -1854,6 +1857,21 @@ mod day10 {
         }
     }
     type Position = (usize, usize);
+    fn get_neighbors(
+        p: &Position,
+        width: usize,
+        height: usize,
+    ) -> impl Iterator<Item = (Position, Direction)> + '_ {
+        let &(p_x, p_y) = p;
+        [
+            ((p_x.saturating_sub(1), p_y), Direction::West),
+            ((p_x, (p_y).saturating_sub(1)), Direction::North),
+            (((p_x + 1).min(width - 1), p_y), Direction::East),
+            ((p_x, (p_y + 1).min(height - 1)), Direction::South),
+        ]
+        .into_iter()
+        .filter(|&((x, y), _)| (x, y) != *p)
+    }
     pub fn part1(input: &str) -> usize {
         let grid = input
             .trim()
@@ -1895,65 +1913,19 @@ mod day10 {
         let mut loop_from_start: Vec<(Position, PipeOpenings)> =
             vec![((start_x, start_y), Pipe::Start.get_openings())];
         loop {
-            let &((tail_x, tail_y), tail_pipe) = loop_from_start.last().unwrap();
+            let &((tail_x, tail_y), tail_openings) = loop_from_start.last().unwrap();
             let mut existing_connection_count = 0;
-            {
-                // check western neighbor for connecting pipe
-                let (x, y) = (tail_x.saturating_sub(1), tail_y);
-                if loop_from_start
-                    .iter()
-                    .any(|((x_, y_), _pipe)| *x_ == x && *y_ == y)
-                {
+            for ((x, y), direction) in get_neighbors(&(tail_x, tail_y), width, height) {
+                if loop_from_start.iter().any(|(pos, openings)| {
+                    pos == &(x, y) && tail_openings.can_connect(&direction, openings)
+                }) {
                     existing_connection_count += 1;
-                } else if let GridCell::Pipe(openings) = &grid[y][x] {
-                    if can_connect(&tail_pipe, openings, Direction::West) {
-                        loop_from_start.push(((x, y), *openings));
-                        continue;
-                    }
+                    continue;
                 }
-            }
-            {
-                // check southern neighbor for connecting pipe
-                let (x, y) = (tail_x, (tail_y).saturating_sub(1));
-                if loop_from_start
-                    .iter()
-                    .any(|((x_, y_), _pipe)| *x_ == x && *y_ == y)
-                {
-                    existing_connection_count += 1;
-                } else if let GridCell::Pipe(openings) = &grid[y][x] {
-                    if can_connect(&tail_pipe, openings, Direction::North) {
+                if let GridCell::Pipe(openings) = &grid[y][x] {
+                    if tail_openings.can_connect(&direction, openings) {
                         loop_from_start.push(((x, y), *openings));
-                        continue;
-                    }
-                }
-            }
-            {
-                // check eastern neighbor for connecting pipe
-                let (x, y) = ((tail_x + 1).min(width - 1), tail_y);
-                if loop_from_start
-                    .iter()
-                    .any(|((x_, y_), _pipe)| *x_ == x && *y_ == y)
-                {
-                    existing_connection_count += 1;
-                } else if let GridCell::Pipe(openings) = &grid[y][x] {
-                    if can_connect(&tail_pipe, openings, Direction::East) {
-                        loop_from_start.push(((x, y), *openings));
-                        continue;
-                    }
-                }
-            }
-            {
-                // check northern neighbor for connecting pipe
-                let (x, y) = (tail_x, (tail_y + 1).min(height - 1));
-                if loop_from_start
-                    .iter()
-                    .any(|((x_, y_), _pipe)| *x_ == x && *y_ == y)
-                {
-                    existing_connection_count += 1;
-                } else if let GridCell::Pipe(openings) = &grid[y][x] {
-                    if can_connect(&tail_pipe, openings, Direction::South) {
-                        loop_from_start.push(((x, y), *openings));
-                        continue;
+                        break;
                     }
                 }
             }

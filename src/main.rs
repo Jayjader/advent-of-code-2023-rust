@@ -1910,27 +1910,36 @@ mod day10 {
     pub fn part1(input: &str) -> usize {
         let grid = parse_grid(input);
         let mut loop_from_start: Vec<(Position, PipeOpenings)> =
-            vec![((grid.start.0, grid.start.1), Pipe::Start.get_openings())];
-        loop {
+            vec![(grid.start, Pipe::Start.get_openings())];
+        let mut found_head = false;
+        while !found_head {
             let &((tail_x, tail_y), tail_openings) = loop_from_start.last().unwrap();
-            let mut existing_connection_count = 0;
-            for ((x, y), direction) in get_neighbors(&(tail_x, tail_y), grid.width, grid.height) {
-                if loop_from_start.iter().any(|(pos, openings)| {
-                    pos == &(x, y) && tail_openings.can_connect(&direction, openings)
-                }) {
-                    existing_connection_count += 1;
-                    continue;
-                }
-                if let GridCell::Pipe(openings) = &grid.cells[y][x] {
-                    if tail_openings.can_connect(&direction, openings) {
-                        loop_from_start.push(((x, y), *openings));
+            for ((x, y), direction_from_tail) in
+                get_neighbors(&(tail_x, tail_y), grid.width, grid.height)
+            {
+                if let GridCell::Pipe(neighbor_openings) = &grid.cells[y][x] {
+                    if tail_openings.can_connect(&direction_from_tail, neighbor_openings) {
+                        let &(start, _) = loop_from_start.first().unwrap();
+                        let (previous, _) =
+                            loop_from_start[loop_from_start.len().saturating_sub(2)];
+                        // if we can connect, then this is one of:
+                        // 1. the previous cell in the loop segment
+                        if (x, y) == previous {
+                            continue;
+                        }
+                        // 2. the start of the loop segment
+                        if (x, y) == start {
+                            found_head = true;
+                        }
+                        // 3. simply the next cell in the loop segment
+                        else {
+                            loop_from_start.push(((x, y), *neighbor_openings));
+                        }
+                        // we've either extended or completed the loop segment,
+                        // so we can skip considering the remaining neighbor cells
                         break;
                     }
                 }
-            }
-            if existing_connection_count > 1 {
-                // looped
-                break;
             }
         }
         loop_from_start.len() / 2

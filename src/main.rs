@@ -1992,7 +1992,7 @@ mod day11 {
     struct Galaxies(BTreeSet<Position>);
 
     impl Galaxies {
-        fn parse(input: &str, expansion_count: usize) -> Galaxies {
+        fn parse(input: &str, expansion_factor: usize) -> Galaxies {
             let lines = input.trim().split('\n');
             let empty_rows: Vec<_> = lines
                 .clone()
@@ -2039,12 +2039,12 @@ mod day11 {
             let mut y_offset = 0;
             for (y, line) in lines.enumerate() {
                 if empty_rows.contains(&y) {
-                    y_offset += expansion_count;
+                    y_offset += (expansion_factor - 1);
                 } else {
                     let mut x_offset = 0;
                     for (x, c) in line.chars().enumerate() {
                         if empty_columns.contains(&x) {
-                            x_offset += expansion_count;
+                            x_offset += (expansion_factor - 1);
                         } else {
                             let cell = c.try_into().unwrap();
                             {
@@ -2072,7 +2072,7 @@ mod day11 {
         }
     }
     pub fn part1(input: &str) -> usize {
-        let galaxies = Galaxies::parse(input, 1);
+        let galaxies = Galaxies::parse(input, 2);
         galaxies.sum_shortest_pairwise_distances()
     }
 

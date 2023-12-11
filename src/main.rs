@@ -1,7 +1,7 @@
 fn main() {
     let day11_input = include_str!("../input/day11");
     println!("day 11, part 1: {}", day11::part1(day11_input));
-    // println!("day 10, part 2: {}", day10::part2(day10_input));
+    println!("day 11, part 2: {}", day11::part2(day11_input));
 }
 
 mod day1 {
@@ -1989,38 +1989,22 @@ mod day11 {
             }
         }
     }
-    #[derive(Debug)]
-    struct Grid {
-        width: usize,
-        height: usize,
-        cells: BTreeMap<Position, GridCell>,
-        galaxies: BTreeSet<Position>,
-    }
-    fn parse_input(input: &str) -> Grid {
-        let lines = input.trim().split('\n');
-        let empty_rows: Vec<_> = lines
-            .clone()
-            .enumerate()
-            .filter(|(_, line)| line.chars().all(|c| c.eq(&'.')))
-            .map(|(y, _)| y)
-            .collect();
-        let empty_columns: Vec<_> = lines
-            .clone()
-            .fold(BTreeMap::new(), |mut accum, line| {
-                if accum.is_empty() {
-                    for (x, c) in line.chars().enumerate() {
-                        accum.insert(
-                            x,
-                            match c {
-                                '.' => true,
-                                '#' => false,
-                                _ => panic!(),
-                            },
-                        );
-                    }
-                } else {
-                    for (x, c) in line.chars().enumerate() {
-                        if *accum.get(&x).unwrap() {
+    struct Galaxies(BTreeSet<Position>);
+
+    impl Galaxies {
+        fn parse(input: &str, expansion_count: usize) -> Galaxies {
+            let lines = input.trim().split('\n');
+            let empty_rows: Vec<_> = lines
+                .clone()
+                .enumerate()
+                .filter(|(_, line)| line.chars().all(|c| c.eq(&'.')))
+                .map(|(y, _)| y)
+                .collect();
+            let empty_columns: Vec<_> = lines
+                .clone()
+                .fold(BTreeMap::new(), |mut accum, line| {
+                    if accum.is_empty() {
+                        for (x, c) in line.chars().enumerate() {
                             accum.insert(
                                 x,
                                 match c {
@@ -2030,112 +2014,68 @@ mod day11 {
                                 },
                             );
                         }
-                    }
-                }
-
-                accum
-            })
-            .iter()
-            .filter(|(_, is_empty)| **is_empty)
-            .map(|(&x, _)| x)
-            .collect();
-        let (observed_width, observed_height) = {
-            let mut tmp_lines = lines.clone();
-            (tmp_lines.next().unwrap().len(), tmp_lines.count() + 1)
-        };
-        let (expanded_width, expanded_height) = (
-            observed_width + empty_columns.len(),
-            observed_height + empty_rows.len(),
-        );
-        let mut cells = BTreeMap::new();
-        let mut galaxies = BTreeSet::new();
-        let mut y_offset = 0;
-        for (y, line) in lines.enumerate() {
-            if empty_rows.contains(&y) {
-                y_offset += 1;
-                for y in [y + y_offset - 1, y + y_offset] {
-                    for x in 0..expanded_width {
-                        cells.insert((x, y), GridCell::EmptySpace);
-                    }
-                }
-            } else {
-                let mut x_offset = 0;
-                for (x, c) in line.chars().enumerate() {
-                    if empty_columns.contains(&x) {
-                        x_offset += 1;
-                        for x in [x + x_offset - 1, x + x_offset] {
-                            cells.insert((x, y + y_offset), GridCell::EmptySpace);
-                        }
                     } else {
-                        let cell = c.try_into().unwrap();
-                        {
-                            let cell_pos = (x + x_offset, y + y_offset);
-                            if let GridCell::Galaxy = cell {
-                                galaxies.insert(cell_pos);
+                        for (x, c) in line.chars().enumerate() {
+                            if *accum.get(&x).unwrap() {
+                                accum.insert(
+                                    x,
+                                    match c {
+                                        '.' => true,
+                                        '#' => false,
+                                        _ => panic!(),
+                                    },
+                                );
                             }
-                            cells.insert(cell_pos, cell);
+                        }
+                    }
+
+                    accum
+                })
+                .iter()
+                .filter(|(_, is_empty)| **is_empty)
+                .map(|(&x, _)| x)
+                .collect();
+            let mut galaxies = BTreeSet::new();
+            let mut y_offset = 0;
+            for (y, line) in lines.enumerate() {
+                if empty_rows.contains(&y) {
+                    y_offset += expansion_count;
+                } else {
+                    let mut x_offset = 0;
+                    for (x, c) in line.chars().enumerate() {
+                        if empty_columns.contains(&x) {
+                            x_offset += expansion_count;
+                        } else {
+                            let cell = c.try_into().unwrap();
+                            {
+                                let cell_pos = (x + x_offset, y + y_offset);
+                                if let GridCell::Galaxy = cell {
+                                    galaxies.insert(cell_pos);
+                                }
+                            }
                         }
                     }
                 }
             }
+            Galaxies(galaxies)
         }
-        Grid {
-            width: expanded_width,
-            height: expanded_height,
-            cells,
-            galaxies,
+        pub fn sum_shortest_pairwise_distances(&self) -> usize {
+            use itertools::Itertools;
+            self.0
+                .iter()
+                .combinations(2)
+                .map(|v| (v[0], v[1]))
+                .map(|((from_x, from_y), (to_x, to_y))| {
+                    from_x.abs_diff(*to_x) + from_y.abs_diff(*to_y)
+                })
+                .sum()
         }
     }
     pub fn part1(input: &str) -> usize {
-        use itertools::Itertools;
-        let grid = parse_input(input);
-        grid.galaxies
-            .iter()
-            .combinations(2)
-            .map(|v| (v[0], v[1]))
-            .map(|((from_x, from_y), (to_x, to_y))| from_x.abs_diff(*to_x) + from_y.abs_diff(*to_y))
-            .sum()
+        let galaxies = Galaxies::parse(input, 1);
+        galaxies.sum_shortest_pairwise_distances()
     }
-    #[test]
-    fn grid_expansion_on_sample() {
-        let input = "...#......
-.......#..
-#.........
-..........
-......#...
-.#........
-.........#
-..........
-.......#..
-#...#.....
-";
-        let expected = "....#........
-.........#...
-#............
-.............
-.............
-........#....
-.#...........
-............#
-.............
-.............
-.........#...
-#....#.......
-";
-        let grid = parse_input(input);
-        let mut stringed = String::new();
-        for y in 0..grid.height {
-            for x in 0..grid.width {
-                stringed.extend([match grid.cells.get(&(x, y)) {
-                    Some(GridCell::EmptySpace) => '.',
-                    Some(GridCell::Galaxy) => '#',
-                    None => panic!("{:?} is not in/on the grid", (x, y)),
-                }]);
-            }
-            stringed.extend(['\n']);
-        }
-        assert_eq!(stringed, expected);
-    }
+
     #[test]
     fn part1_on_sample() {
         let input = "...#......
@@ -2150,5 +2090,30 @@ mod day11 {
 #...#.....
 ";
         assert_eq!(part1(input), 374);
+    }
+    #[test]
+    fn bigger_expansions_on_sample() {
+        let input = "...#......
+.......#..
+#.........
+..........
+......#...
+.#........
+.........#
+..........
+.......#..
+#...#.....
+";
+        assert_eq!(
+            1030,
+            Galaxies::parse(input, 10).sum_shortest_pairwise_distances()
+        );
+        assert_eq!(
+            8410,
+            Galaxies::parse(input, 100).sum_shortest_pairwise_distances()
+        );
+    }
+    pub fn part2(input: &str) -> usize {
+        Galaxies::parse(input, 1_000_000).sum_shortest_pairwise_distances()
     }
 }

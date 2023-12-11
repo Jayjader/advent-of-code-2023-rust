@@ -1,7 +1,43 @@
+use std::fmt::Formatter;
+
+use clap::{Parser, ValueEnum};
+
+#[derive(Debug, Clone, Default, ValueEnum)]
+enum PartOption {
+    First,
+    Second,
+    #[default]
+    Both,
+}
+impl std::fmt::Display for PartOption {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                PartOption::First => "first",
+                PartOption::Second => "second",
+                PartOption::Both => "both",
+            }
+        )
+    }
+}
+#[derive(Parser, Debug)]
+struct Args {
+    #[arg(short, long)]
+    day: u8,
+    #[arg(short, long, default_value_t = PartOption::Both)]
+    part: PartOption,
+}
 fn main() {
-    let day11_input = include_str!("../input/day11");
-    println!("day 11, part 1: {}", day11::part1(day11_input));
-    println!("day 11, part 2: {}", day11::part2(day11_input));
+    let args = Args::parse();
+    let input_for_day = include_str!("../input/day11");
+    if !matches!(&args.part, PartOption::Second) {
+        println!("day 11, part 1: {}", day11::part1(input_for_day));
+    }
+    if !matches!(&args.part, PartOption::First) {
+        println!("day 11, part 2: {}", day11::part2(input_for_day));
+    }
 }
 
 mod day1 {

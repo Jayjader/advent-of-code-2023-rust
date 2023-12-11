@@ -51,15 +51,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aoc2023"
-version = "0.1.0"
-dependencies = [
- "clap",
- "counter",
- "itertools",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -121,6 +112,60 @@ dependencies = [
 ]
 
 [[package]]
+name = "day1"
+version = "0.1.0"
+dependencies = [
+ "counter",
+ "itertools",
+]
+
+[[package]]
+name = "day10"
+version = "0.1.0"
+
+[[package]]
+name = "day11"
+version = "0.1.0"
+dependencies = [
+ "itertools",
+]
+
+[[package]]
+name = "day2"
+version = "0.1.0"
+
+[[package]]
+name = "day3"
+version = "0.1.0"
+
+[[package]]
+name = "day4"
+version = "0.1.0"
+
+[[package]]
+name = "day5"
+version = "0.1.0"
+
+[[package]]
+name = "day6"
+version = "0.1.0"
+
+[[package]]
+name = "day7"
+version = "0.1.0"
+dependencies = [
+ "counter",
+]
+
+[[package]]
+name = "day8"
+version = "0.1.0"
+
+[[package]]
+name = "day9"
+version = "0.1.0"
+
+[[package]]
 name = "either"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -166,6 +211,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5267fca4496028628a95160fc423a33e8b2e6af8a5302579e322e4b520293cae"
 dependencies = [
  "proc-macro2",
+]
+
+[[package]]
+name = "runner"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "day1",
+ "day10",
+ "day11",
+ "day2",
+ "day3",
+ "day4",
+ "day5",
+ "day6",
+ "day7",
+ "day8",
+ "day9",
 ]
 
 [[package]]

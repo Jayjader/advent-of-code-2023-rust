@@ -1,11 +1,16 @@
-[package]
-name = "aoc2023"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-clap = { version = "4.4.11", features = ["derive"] }
-counter = "0.5.7"
-itertools = "0.12.0"
+[workspace]
+members = [
+    "runner",
+    "day1",
+    "day2",
+    "day3",
+    "day4",
+    "day5",
+    "day6",
+    "day7",
+    "day8",
+    "day9",
+    "day10",
+    "day11"
+]
+resolver = "2"
